@@ -1,0 +1,330 @@
+{
+  "meta": {
+    "description": "Isaac Akonkwa, full-stack software engineer, builder and mentor based in Bukavu (DRC). Web and mobile development, AI integration and security.",
+    "ogLocale": "en_US"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "projects": "Projects",
+    "services": "Services",
+    "contact": "Contact",
+    "menu": "Open menu",
+    "close": "Close menu",
+    "skip": "Skip to content",
+    "main": "Main navigation",
+    "quote": "Quote"
+  },
+  "theme": {
+    "toggle": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English",
+    "switchTo": "Lire en français"
+  },
+  "hero": {
+    "ctaPrimary": "Request a quote",
+    "ctaSecondary": "See my projects",
+    "basedIn": "Based in",
+    "since": "Since",
+    "portraitAlt": "Portrait of Isaac Akonkwa"
+  },
+  "sections": {
+    "profile": "Profile",
+    "expertise": "Expertise and services",
+    "projects": "Featured projects",
+    "journey": "Journey",
+    "stack": "Tech stack",
+    "testimonials": "Testimonials",
+    "contact": "Contact"
+  },
+  "home": {
+    "trustLabel": "Organizations and communities",
+    "profileMore": "Learn more",
+    "expertiseTitle": "Build with method, ship with intention.",
+    "serviceCta": "Discuss this service",
+    "allServices": "All services",
+    "projectsTitle": "Products built for real use.",
+    "allProjects": "All projects",
+    "journeyTitle": "A path shaped by learning and impact.",
+    "stackTitle": "Tools chosen to solve the right problems, not to fill a list.",
+    "testimonialsTitle": "What people who worked with me say.",
+    "otherNeed": "Something different in mind? Let’s talk."
+  },
+  "journey": {
+    "filterLabel": "Filter the journey",
+    "all": "All",
+    "experience": "Experience",
+    "education": "Education",
+    "community": "Community",
+    "speaking": "Talks",
+    "award": "Awards"
+  },
+  "skills": {
+    "levels": {
+      "advanced": "Advanced",
+      "confirmed": "Proficient",
+      "intermediate": "Intermediate"
+    },
+    "groups": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "mobile": "Mobile",
+      "database": "Databases and ORM",
+      "cloud": "Cloud and infrastructure",
+      "ai": "AI and Python",
+      "security": "Security",
+      "tools": "Tools"
+    }
+  },
+  "project": {
+    "view": "Read the case study",
+    "back": "All projects",
+    "context": "Context",
+    "problem": "Problem",
+    "objective": "Objective",
+    "role": "My role",
+    "results": "Results",
+    "stack": "Stack",
+    "gallery": "Gallery",
+    "demo": "Live demo",
+    "code": "Source code",
+    "previous": "Previous project",
+    "next": "Next project",
+    "ctaTitle": "Have a similar project in mind?",
+    "ctaText": "Let’s talk about your context, constraints and timeline.",
+    "confidential": "Confidential client project",
+    "period": "Period",
+    "type": "Type",
+    "stageLabel": "Status",
+    "testimonial": "Testimonial",
+    "imageOf": "Image {current} of {total}",
+    "closeLightbox": "Close",
+    "nextImage": "Next image",
+    "previousImage": "Previous image",
+    "stage": {
+      "concept": "Concept",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "maintained": "Maintained"
+    },
+    "projectType": {
+      "personal": "Personal project",
+      "client": "Client project",
+      "team": "Team project",
+      "academic": "Academic project"
+    },
+    "categories": {
+      "web": "Web",
+      "mobile": "Mobile",
+      "ai": "AI",
+      "security": "Security",
+      "saas": "SaaS",
+      "backend": "Backend",
+      "health": "Health",
+      "education": "Education",
+      "management": "Management",
+      "devtools": "Dev tools"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "intro": "Case studies of web, mobile and AI products, from concept to production.",
+    "filterLabel": "Filter by category",
+    "all": "All",
+    "search": "Search a project",
+    "empty": "No project matches your search.",
+    "count": "{count, plural, =0 {No project} one {# project} other {# projects}}"
+  },
+  "services": {
+    "title": "Services",
+    "intro": "From scoping to launch, I help teams and founders on the web, mobile, AI and security.",
+    "from": "From",
+    "deliverables": "Deliverables",
+    "cta": "Discuss this service",
+    "processTitle": "How we work together",
+    "process": {
+      "1": {
+        "title": "Discovery",
+        "text": "We clarify your goals, your users and your constraints."
+      },
+      "2": {
+        "title": "Proposal",
+        "text": "You receive a detailed proposal: scope, milestones, timeline and budget."
+      },
+      "3": {
+        "title": "Delivery",
+        "text": "Development moves forward in short iterations, with regular demos."
+      },
+      "4": {
+        "title": "Launch and support",
+        "text": "Go live, documentation, then ongoing support as needed."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "A project, a collaboration, a role or a question: get in touch.",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "calendly": "Book a call",
+    "socials": "Social",
+    "formSoon": "The contact form is coming very soon. In the meantime, write to me directly by email or on WhatsApp.",
+    "writeMe": "Write to me",
+    "whatsappMessage": "Hello Isaac, I am reaching out from your website."
+  },
+  "about": {
+    "title": "About",
+    "values": "Values",
+    "journey": "Full journey",
+    "skills": "Skills",
+    "cv": "Download the resume",
+    "location": "Location"
+  },
+  "legal": {
+    "legalTitle": "Legal notice",
+    "privacyTitle": "Privacy policy",
+    "updated": "Last updated"
+  },
+  "footer": {
+    "quickLinks": "Quick links",
+    "follow": "Social",
+    "legal": "Legal notice",
+    "privacy": "Privacy",
+    "rights": "All rights reserved."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This page does not exist or has moved.",
+    "back": "Back to home"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "text": "The issue has been logged. Please try again in a moment.",
+    "retry": "Try again"
+  },
+  "contactForm": {
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone or WhatsApp",
+    "phoneHint": "Optional, international format if possible.",
+    "topic": "Subject",
+    "message": "Your message",
+    "messageHint": "{count} characters, 50 minimum.",
+    "consent": "I agree that my details are used to reply to me.",
+    "privacy": "Privacy policy",
+    "submit": "Send message",
+    "successTitle": "Message sent, thank you.",
+    "successText": "A confirmation email is on its way. I usually reply within 24 to 48 hours.",
+    "topics": {
+      "project": "Project",
+      "collaboration": "Collaboration",
+      "recruitment": "Hiring",
+      "mentoring": "Mentoring",
+      "other": "Other"
+    },
+    "errors": {
+      "required": "This field is required.",
+      "email": "Invalid email address.",
+      "phone": "Invalid phone number.",
+      "min50": "Your message must be at least 50 characters long.",
+      "tooLong": "This text is too long.",
+      "consent": "Please agree to the use of your details to reply to you.",
+      "rateLimited": "Too many messages from your connection. Try again in an hour or write directly by email.",
+      "turnstile": "The anti bot check failed. Reload the page and try again.",
+      "expired": "The form has expired. Reload the page and try again.",
+      "invalid": "Invalid value.",
+      "fileType": "File format not accepted (PDF or image).",
+      "fileSize": "File too large (10 MB maximum).",
+      "tooManyFiles": "5 files maximum.",
+      "url": "Invalid web address."
+    }
+  },
+  "quoteForm": {
+    "title": "Request a quote",
+    "intro": "Four quick steps to describe your project. I usually reply within 24 to 48 hours with a proposal or questions.",
+    "steps": {
+      "1": "Project",
+      "2": "Needs",
+      "3": "Budget and timeline",
+      "4": "Contact details"
+    },
+    "stepOf": "Step {current} of {total}",
+    "next": "Continue",
+    "back": "Back",
+    "submit": "Send request",
+    "projectType": "What kind of project?",
+    "types": {
+      "showcase_site": "Showcase website",
+      "web_app": "Web application",
+      "mobile_app": "Mobile application",
+      "ecommerce": "E-commerce",
+      "ai_integration": "AI integration",
+      "security_audit": "Security audit",
+      "training": "Training or mentoring",
+      "other": "Other"
+    },
+    "services": "Related services (optional)",
+    "description": "Describe your project",
+    "descriptionHint": "Goals, users, context. 30 characters minimum.",
+    "features": "Desired features",
+    "featureList": {
+      "accounts": "User accounts",
+      "payments": "Payments (Mobile Money, card)",
+      "admin": "Back office",
+      "multilingual": "Several languages",
+      "offline": "Offline support",
+      "notifications": "Notifications",
+      "analytics": "Analytics",
+      "api": "API or integrations"
+    },
+    "featuresOther": "Other features",
+    "hasDesign": "Do you already have mockups?",
+    "yes": "Yes",
+    "no": "No",
+    "referenceLinks": "Reference websites or apps",
+    "referenceHint": "One address per line, optional.",
+    "attachments": "Attachments",
+    "attachmentsHint": "PDF or images, 5 files and 10 MB per file at most.",
+    "budget": "Planned budget",
+    "budgets": {
+      "lt500": "Under 500 USD",
+      "500_1500": "500 to 1,500 USD",
+      "1500_5000": "1,500 to 5,000 USD",
+      "5000_15000": "5,000 to 15,000 USD",
+      "gt15000": "Over 15,000 USD",
+      "unknown": "Not sure yet"
+    },
+    "currency": "Payment currency",
+    "currencyHint": "Payment in Congolese francs is possible.",
+    "deadline": "Desired timeline",
+    "deadlines": {
+      "asap": "As soon as possible",
+      "1_month": "Within 1 month",
+      "3_months": "Within 3 months",
+      "6_months": "Within 6 months",
+      "flexible": "Flexible"
+    },
+    "company": "Organization (optional)",
+    "preferredContact": "How would you like to be contacted?",
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "call": "Call"
+    },
+    "draftRestored": "Your draft has been restored.",
+    "clearDraft": "Clear",
+    "successTitle": "Request sent, thank you.",
+    "successText": "A confirmation email is on its way. I usually get back to you within 24 to 48 hours.",
+    "errors": {
+      "min30": "The description must be at least 30 characters long.",
+      "network": "Unable to send right now. Check your connection and try again."
+    },
+    "remove": "Remove"
+  }
+}

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: portfolio_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/portfolio_test
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Forbidden characters
+        run: pnpm check:chars
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Build cron bundle
+        run: pnpm build:cron
+
+      # Same artefact as the deployment, started the way Passenger starts it.
+      - name: Release smoke test
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/portfolio_test
+          NODE_ENV: production
+          PORT: "3100"
+        run: |
+          node scripts/assemble-release.mjs
+          cd release
+          export AUTH_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
+          node dist/migrate.js
+          node dist/cron.js healthcheck
+          node server.js > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3100/ && break; sleep 1; done
+          curl -sf -o /dev/null -w "home %{http_code}\n" http://localhost:3100/
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/admin)" = "307"
+          curl -sf http://localhost:3100/admin/login | grep -q "Connexion"
+          cat server.log

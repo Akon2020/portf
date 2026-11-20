@@ -1,0 +1,6 @@
+#!/bin/sh
+# Rejects commits that add an em dash, en dash, section sign or emoji.
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$files" ] && exit 0
+# shellcheck disable=SC2086
+pnpm -s exec tsx scripts/forbidden-chars.ts $files

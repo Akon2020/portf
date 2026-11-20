@@ -20,3 +20,5 @@ portfolio_data/
 # OS
 .DS_Store
 Thumbs.db
+release/
+release-server.log

@@ -5,7 +5,15 @@ const config = [
   ...nextVitals,
   ...nextTypescript,
   {
-    ignores: [".next/**", "node_modules/**", "dist/**", "drizzle/**", "next-env.d.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
+    ignores: [".next/**", "node_modules/**", "dist/**", "release/**", "drizzle/**", "portfolio_data/**", "next-env.d.ts"],
   },
 ];
 

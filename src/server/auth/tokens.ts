@@ -10,6 +10,7 @@ export const AUTH_TOKEN_TTL_MINUTES: Record<AuthTokenType, number> = {
   password_reset: 30,
   email_change: 60,
   invite: 7 * 24 * 60,
+  session_revoke: 7 * 24 * 60,
 };
 
 export interface IssueTokenInput {

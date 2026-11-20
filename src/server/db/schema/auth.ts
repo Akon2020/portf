@@ -19,6 +19,7 @@ export const authTokenType = pgEnum("auth_token_type", [
   "password_reset",
   "email_change",
   "invite",
+  "session_revoke",
 ]);
 
 export const users = pgTable("users", {

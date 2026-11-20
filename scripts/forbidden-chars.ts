@@ -5,6 +5,7 @@
  * Usage:
  *   pnpm check:chars              scans the whole project
  *   pnpm check:chars file1 file2  scans only the given files (pre-commit hook)
+ *   pnpm check:chars --any file    scans a file whatever its extension (commit message)
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
@@ -122,9 +123,13 @@ export function scanText(text: string, file: string): Violation[] {
   return violations;
 }
 
-export function scanFiles(files: string[], root = projectRoot): Violation[] {
+export function scanFiles(
+  files: string[],
+  root = projectRoot,
+  options: { anyExtension?: boolean } = {},
+): Violation[] {
   return files.flatMap((file) => {
-    if (!isTextFile(file)) return [];
+    if (!options.anyExtension && !isTextFile(file)) return [];
     let text: string;
     try {
       text = readFileSync(file, "utf8");
@@ -136,9 +141,11 @@ export function scanFiles(files: string[], root = projectRoot): Violation[] {
 }
 
 function main(): void {
-  const args = process.argv.slice(2).map((file) => resolve(file));
+  const rawArgs = process.argv.slice(2);
+  const anyExtension = rawArgs.includes("--any");
+  const args = rawArgs.filter((arg) => arg !== "--any").map((file) => resolve(file));
   const files = args.length > 0 ? args : listProjectFiles();
-  const violations = scanFiles(files);
+  const violations = scanFiles(files, projectRoot, { anyExtension });
   if (violations.length === 0) {
     console.log(`Typographie OK (${files.length} fichiers analysés).`);
     return;
