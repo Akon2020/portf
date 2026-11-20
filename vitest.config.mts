@@ -6,7 +6,11 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    include: ["tests/unit/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     environment: "node",
+    setupFiles: ["tests/setup/env.ts"],
+    // Integration tests share one database.
+    fileParallelism: false,
+    testTimeout: 20_000,
   },
 });
