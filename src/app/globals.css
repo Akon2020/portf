@@ -4,9 +4,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root { --navy: #0B1F3A; --orange: #D97706; --green: #16A34A; --cream: #F4F0E8; --ink: #132238; --muted: #718096; --line: rgba(11,31,58,.13); --surface: #ebe7de; --background: var(--cream); --foreground: var(--ink); --radius: 1.25rem; }
-.dark { --background: #0B1F3A; --foreground: #F4F0E8; --surface: #102846; --line: rgba(244,240,232,.16); --muted: #aab7c5; }
-@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-border: var(--line); --color-primary: var(--orange); --color-muted: var(--muted); --font-sans: var(--font-inter); --font-heading: var(--font-poppins); }
+:root {
+  --navy: #0B1F3A; --orange: #D97706; --green: #16A34A; --cream: #F4F0E8; --ink: #132238;
+  --muted: #718096; --muted-fg: #4F5B6B; --line: rgba(11,31,58,.13); --surface: #ebe7de; --card: #FBF9F4;
+  --background: var(--cream); --foreground: var(--ink);
+  --primary: #132238; --primary-fg: #F4F0E8; --danger: #B42318; --success: #15803D;
+  --radius: 1.25rem;
+}
+.dark {
+  --background: #0B1F3A; --foreground: #F4F0E8; --surface: #102846; --card: #102846; --line: rgba(244,240,232,.16);
+  --muted: #aab7c5; --muted-fg: #C3CDD8; --primary: #F4F0E8; --primary-fg: #132238; --danger: #F97066; --success: #4ADE80;
+}
+@theme inline {
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --color-card: var(--card); --color-card-foreground: var(--foreground);
+  --color-popover: var(--card); --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--surface); --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--surface); --color-muted-foreground: var(--muted-fg);
+  --color-accent: var(--orange); --color-accent-foreground: #FFFFFF;
+  --color-brand: var(--green); --color-success: var(--success);
+  --color-destructive: var(--danger);
+  --color-border: var(--line); --color-input: var(--line); --color-ring: var(--orange);
+  --font-sans: var(--font-inter); --font-heading: var(--font-poppins);
+}
 * { box-sizing: border-box; border-color: var(--line); }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-inter), Arial, sans-serif; }
