@@ -106,6 +106,16 @@ La commande demande l'e-mail, le nom et le mot de passe (saisie masquée). La do
 
 En local : `pnpm create-admin`.
 
+### Contenu initial
+
+Après la première migration, depuis un poste ayant accès à la base :
+
+```sh
+pnpm seed:content
+```
+
+Le seed ne remplace jamais un contenu existant et peut être relancé sans risque. Le contenu de l'ancien site et les projets récents arrivent en brouillon avec une note, listés dans Administration, « À valider ». Ajouter `--no-images` pour ne pas télécharger les visuels.
+
 ## 6. Cron Jobs
 
 cPanel, « Cron Jobs ». Toujours se placer dans le dossier de l'application pour que `.env` soit lu, et utiliser le binaire Node de l'application :
@@ -148,6 +158,7 @@ Prérequis : Node 22 ou plus, pnpm, PostgreSQL local.
 pnpm install
 cp .env.example .env.local          # puis renseigner DATABASE_URL et AUTH_ENCRYPTION_KEY
 pnpm db:migrate
+pnpm seed:content
 pnpm create-admin
 pnpm dev
 ```

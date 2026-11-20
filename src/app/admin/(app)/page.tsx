@@ -2,7 +2,9 @@ import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { requireAdmin } from "@/server/auth/guards";
+import { reviewQueue } from "@/server/content/admin-queries";
 import { getDb } from "@/server/db";
 import { backupCodes, loginAttempts } from "@/server/db/schema";
 
@@ -36,22 +38,37 @@ export default async function AdminDashboardPage() {
   const { user } = await requireAdmin();
   const db = getDb();
 
-  const [[{ remaining }], attempts] = await Promise.all([
+  const [[{ remaining }], attempts, queue] = await Promise.all([
     db
       .select({ remaining: count() })
       .from(backupCodes)
       .where(and(eq(backupCodes.userId, user.id), isNull(backupCodes.usedAt))),
     db.select().from(loginAttempts).orderBy(desc(loginAttempts.createdAt)).limit(10),
+    reviewQueue(),
   ]);
+  const toReview = queue.projects.length + queue.journey.length + queue.testimonials.length + queue.media.length;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Tableau de bord</h1>
+        <h1 className="font-sans text-3xl font-semibold tracking-tight">Tableau de bord</h1>
         <p className="mt-1 text-muted-foreground">
-          Les indicateurs (visites, messages, devis, factures, tâches) arrivent avec les prochaines phases.
+          Visites, messages, devis, factures et tâches arriveront avec les prochaines phases.
         </p>
       </div>
+
+      {toReview > 0 && (
+        <Link
+          href="/admin/a-valider"
+          className="flex items-center justify-between gap-4 rounded-xl border border-warning/40 bg-warning/5 p-5 hover:bg-warning/10"
+        >
+          <span>
+            <span className="block font-medium">{toReview} éléments à valider</span>
+            <span className="block text-sm text-muted-foreground">Contenus importés ou incohérents à confirmer avant publication.</span>
+          </span>
+          <span className="text-sm font-medium text-warning">Ouvrir</span>
+        </Link>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
