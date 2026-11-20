@@ -20,6 +20,7 @@ export async function listLibrary(): Promise<LibraryItem[]> {
     id: row.id,
     url: `/media/${row.path}`,
     thumb: `/media/${row.variants[0]?.path ?? row.path}`,
+    large: `/media/${row.variants.at(-1)?.path ?? row.path}`,
     mime: row.mime,
     alt: row.alt,
     needsReplacement: row.needsReplacement,

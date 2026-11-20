@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   // Native modules loaded at runtime instead of being bundled.
-  serverExternalPackages: ["@node-rs/argon2", "sharp"],
+  serverExternalPackages: ["@node-rs/argon2", "sharp", "@react-pdf/renderer"],
   // The storage driver builds file paths at runtime, which makes file tracing
   // include the whole project: only runtime files may reach the server.
   outputFileTracingExcludes: {

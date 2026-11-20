@@ -11,6 +11,7 @@ import { createAdmin } from "../src/server/cli/create-admin";
 import { healthcheck } from "../src/server/cli/healthcheck";
 import { registerJobHandlers } from "../src/server/jobs/handlers";
 import { runDueJobs } from "../src/server/jobs/runner";
+import { expireQuotes } from "../src/server/services/quotes";
 
 loadEnvConfig(process.cwd());
 registerJobHandlers();
@@ -40,7 +41,8 @@ const tasks: Record<string, { task: Task; tracked: boolean }> = {
         .delete(authTokens)
         .where(sql`${authTokens.expiresAt} < now() - interval '7 days'`)
         .returning({ id: authTokens.id });
-      return { processed: rateLimits + oldSessions.length + oldTokens.length };
+      const expiredQuotes = await expireQuotes();
+      return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes };
     },
   },
 };

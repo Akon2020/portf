@@ -6,7 +6,7 @@ import { textToHtml } from "@/lib/text-html";
 import { cleanTypography } from "@/lib/typography";
 import { getDb } from "../db";
 import { clients, contacts, conversations, messages, type Attachment, type Conversation } from "../db/schema";
-import { readSettingUncached } from "../content/queries";
+import { readSettingUncached } from "../content/settings-store";
 import { newMessageId, renderMail, sendMailOrQueue } from "../mail/send";
 import { writeAudit } from "./audit";
 

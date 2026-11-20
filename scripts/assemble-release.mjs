@@ -6,7 +6,7 @@
 //   public/            public files
 //   dist/cron.js       cron entry point, dist/migrate.js migration runner
 //   drizzle/           SQL migrations
-import { cpSync, existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
 const out = "release";
@@ -24,39 +24,49 @@ cpSync(".next/static", `${out}/.next/static`, { recursive: true });
 cpSync("public", `${out}/public`, { recursive: true });
 cpSync("dist", `${out}/dist`, { recursive: true });
 cpSync("drizzle", `${out}/drizzle`, { recursive: true });
+cpSync("scripts/check-release-pdf.mjs", `${out}/scripts/check-release-pdf.mjs`);
 
-// Next file tracing misses the platform specific native bindings of
-// @node-rs/argon2 (optional dependencies): copy the ones installed for the
-// build machine, which is Linux x64 in CI like the cPanel host.
-// node_modules is hoisted (pnpm nodeLinker: hoisted), so bindings sit next to the main package.
-const scopeDir = "node_modules/@node-rs";
-let bindings = 0;
-for (const name of existsSync(scopeDir) ? readdirSync(scopeDir) : []) {
-  if (!/^argon2-/.test(name)) continue;
-  cpSync(`${scopeDir}/${name}`, `${out}/node_modules/@node-rs/${name}`, { recursive: true, dereference: true });
-  bindings++;
+// Next file tracing misses parts of some packages: platform specific native
+// bindings (optional dependencies of @node-rs/argon2 and sharp) and ESM
+// entries loaded at runtime (fontkit for @react-pdf). These packages are
+// shipped whole, with their full dependency closure. node_modules is hoisted
+// (pnpm nodeLinker: hoisted) and built on Linux x64 in CI, like the host.
+const FULL_PACKAGES = ["@node-rs/argon2", "sharp", "@react-pdf/renderer"];
+
+function readManifest(name) {
+  const file = `node_modules/${name}/package.json`;
+  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
 }
-if (bindings === 0) {
+
+const shipped = new Set();
+function shipWithDependencies(name) {
+  if (shipped.has(name)) return;
+  const manifest = readManifest(name);
+  // Optional dependencies for other platforms are simply not installed.
+  if (!manifest) return;
+  shipped.add(name);
+  cpSync(`node_modules/${name}`, `${out}/node_modules/${name}`, { recursive: true, dereference: true });
+  for (const dependency of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies })) {
+    shipWithDependencies(dependency);
+  }
+}
+
+for (const name of FULL_PACKAGES) {
+  if (!readManifest(name)) {
+    console.error(`Paquet introuvable dans node_modules : ${name}.`);
+    process.exit(1);
+  }
+  shipWithDependencies(name);
+}
+if (![...shipped].some((name) => name.startsWith("@node-rs/argon2-"))) {
   console.error("Aucun binaire natif @node-rs/argon2 trouvé : la connexion échouerait en production.");
   process.exit(1);
 }
-
-// sharp is only partially traced (the cron bundle loads its ESM entry):
-// ship the whole package and its platform binaries (@img/sharp-*, libvips).
-const runtimePackages = ["sharp", "detect-libc", "semver", "@img/colour"];
-for (const name of runtimePackages) {
-  if (existsSync(`node_modules/${name}`)) {
-    cpSync(`node_modules/${name}`, `${out}/node_modules/${name}`, { recursive: true, dereference: true });
-  }
-}
-for (const name of existsSync("node_modules/@img") ? readdirSync("node_modules/@img") : []) {
-  if (!/^sharp-/.test(name)) continue;
-  cpSync(`node_modules/@img/${name}`, `${out}/node_modules/@img/${name}`, { recursive: true, dereference: true });
-}
+console.log(`${shipped.size} paquets copiés en entier (${FULL_PACKAGES.join(", ")} et dépendances).`);
 
 // Defensive clean-up: only runtime files are deployed.
 const notShipped = [
-  "src", "tests", "docs", "scripts", "cron", "release", "portfolio_data", ".claude",
+  "src", "tests", "docs", "cron", "release", "portfolio_data", ".claude",
   "README.md", "CLAUDE.md", "components.json", "drizzle.config.ts", "eslint.config.mjs",
   "next.config.ts", "postcss.config.mjs", "vitest.config.mts", "tsconfig.json", "tsconfig.tsbuildinfo",
   "pnpm-lock.yaml", "pnpm-workspace.yaml", "release-server.log",

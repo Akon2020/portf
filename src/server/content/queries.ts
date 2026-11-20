@@ -7,7 +7,6 @@ import {
   projectImages,
   projects,
   services,
-  settings,
   skills,
   socialLinks,
   stats,
@@ -15,7 +14,10 @@ import {
   type LocalizedText,
   type Media,
 } from "../db/schema";
-import { DEFAULT_SETTINGS, SETTINGS_SCHEMAS, type SettingsKey, type SettingsValue } from "./settings-schema";
+import type { SettingsKey, SettingsValue } from "./settings-schema";
+import { readSettingUncached } from "./settings-store";
+
+export { readSettingUncached };
 
 /** Cache tags, invalidated by the admin after each change. */
 export const TAGS = {
@@ -28,6 +30,8 @@ export const TAGS = {
   socials: "content:socials",
   stats: "content:stats",
   media: "content:media",
+  posts: "content:posts",
+  gallery: "content:gallery",
 } as const;
 
 const ONE_DAY = 86_400;
@@ -67,13 +71,6 @@ async function loadMediaMap(ids: (string | null | undefined)[]): Promise<Map<str
 }
 
 // Settings
-
-export async function readSettingUncached<K extends SettingsKey>(key: K): Promise<SettingsValue<K>> {
-  const [row] = await getDb().select().from(settings).where(eq(settings.key, key)).limit(1);
-  const merged = { ...DEFAULT_SETTINGS[key], ...((row?.value as object | undefined) ?? {}) };
-  const parsed = SETTINGS_SCHEMAS[key].safeParse(merged);
-  return (parsed.success ? parsed.data : DEFAULT_SETTINGS[key]) as SettingsValue<K>;
-}
 
 export const getSetting = unstable_cache(readSettingUncached, ["setting"], { tags: [TAGS.settings], revalidate: ONE_DAY }) as <
   K extends SettingsKey,
