@@ -12,7 +12,8 @@
     "menu": "Open menu",
     "close": "Close menu",
     "skip": "Skip to content",
-    "main": "Main navigation"
+    "main": "Main navigation",
+    "quote": "Quote"
   },
   "theme": {
     "toggle": "Change theme",
@@ -27,7 +28,7 @@
     "switchTo": "Lire en français"
   },
   "hero": {
-    "ctaPrimary": "Let’s talk about your project",
+    "ctaPrimary": "Request a quote",
     "ctaSecondary": "See my projects",
     "basedIn": "Based in",
     "since": "Since",
@@ -243,5 +244,87 @@
       "tooManyFiles": "5 files maximum.",
       "url": "Invalid web address."
     }
+  },
+  "quoteForm": {
+    "title": "Request a quote",
+    "intro": "Four quick steps to describe your project. I usually reply within 24 to 48 hours with a proposal or questions.",
+    "steps": {
+      "1": "Project",
+      "2": "Needs",
+      "3": "Budget and timeline",
+      "4": "Contact details"
+    },
+    "stepOf": "Step {current} of {total}",
+    "next": "Continue",
+    "back": "Back",
+    "submit": "Send request",
+    "projectType": "What kind of project?",
+    "types": {
+      "showcase_site": "Showcase website",
+      "web_app": "Web application",
+      "mobile_app": "Mobile application",
+      "ecommerce": "E-commerce",
+      "ai_integration": "AI integration",
+      "security_audit": "Security audit",
+      "training": "Training or mentoring",
+      "other": "Other"
+    },
+    "services": "Related services (optional)",
+    "description": "Describe your project",
+    "descriptionHint": "Goals, users, context. 30 characters minimum.",
+    "features": "Desired features",
+    "featureList": {
+      "accounts": "User accounts",
+      "payments": "Payments (Mobile Money, card)",
+      "admin": "Back office",
+      "multilingual": "Several languages",
+      "offline": "Offline support",
+      "notifications": "Notifications",
+      "analytics": "Analytics",
+      "api": "API or integrations"
+    },
+    "featuresOther": "Other features",
+    "hasDesign": "Do you already have mockups?",
+    "yes": "Yes",
+    "no": "No",
+    "referenceLinks": "Reference websites or apps",
+    "referenceHint": "One address per line, optional.",
+    "attachments": "Attachments",
+    "attachmentsHint": "PDF or images, 5 files and 10 MB per file at most.",
+    "budget": "Planned budget",
+    "budgets": {
+      "lt500": "Under 500 USD",
+      "500_1500": "500 to 1,500 USD",
+      "1500_5000": "1,500 to 5,000 USD",
+      "5000_15000": "5,000 to 15,000 USD",
+      "gt15000": "Over 15,000 USD",
+      "unknown": "Not sure yet"
+    },
+    "currency": "Payment currency",
+    "currencyHint": "Payment in Congolese francs is possible.",
+    "deadline": "Desired timeline",
+    "deadlines": {
+      "asap": "As soon as possible",
+      "1_month": "Within 1 month",
+      "3_months": "Within 3 months",
+      "6_months": "Within 6 months",
+      "flexible": "Flexible"
+    },
+    "company": "Organization (optional)",
+    "preferredContact": "How would you like to be contacted?",
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "call": "Call"
+    },
+    "draftRestored": "Your draft has been restored.",
+    "clearDraft": "Clear",
+    "successTitle": "Request sent, thank you.",
+    "successText": "A confirmation email is on its way. I usually get back to you within 24 to 48 hours.",
+    "errors": {
+      "min30": "The description must be at least 30 characters long.",
+      "network": "Unable to send right now. Check your connection and try again."
+    },
+    "remove": "Remove"
   }
 }

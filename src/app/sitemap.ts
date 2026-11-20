@@ -5,7 +5,7 @@ import { getPublishedProjects } from "@/server/content/queries";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PAGES = ["/", "/a-propos", "/projets", "/services", "/contact", "/mentions-legales", "/confidentialite"] as const;
+const STATIC_PAGES = ["/", "/a-propos", "/projets", "/services", "/devis", "/contact", "/mentions-legales", "/confidentialite"] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const projects = await getPublishedProjects();

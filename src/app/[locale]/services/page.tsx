@@ -47,7 +47,10 @@ export default async function ServicesPage({ params }: { params: Promise<{ local
                     </span>
                   </p>
                 )}
-                <Link href="/contact" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+                <Link
+                  href={{ pathname: "/devis", query: { service: service.slug } }}
+                  className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+                >
                   {t("cta")}
                   <ArrowUpRight className="size-4" aria-hidden="true" />
                 </Link>

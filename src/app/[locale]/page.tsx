@@ -102,7 +102,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
           )}
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/contact"
+              href="/devis"
               className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5"
             >
               {t("hero.ctaPrimary")}
@@ -223,7 +223,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
                     <h3 className="mt-10 text-(length:--text-h3) font-medium">{tr(service.title, locale)}</h3>
                     <p className="mt-3 flex-1 text-muted-foreground">{tr(service.description, locale)}</p>
                     <Link
-                      href="/contact"
+                      href={{ pathname: "/devis", query: { service: service.slug } }}
                       className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
                     >
                       {t("home.serviceCta")}
@@ -235,7 +235,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
               {services.slice(0, 6).length % 3 !== 0 && (
                 <li className="flex flex-col justify-between bg-background p-7 lg:col-span-1">
                   <p className="font-heading text-(length:--text-h3) font-medium">{t("home.otherNeed")}</p>
-                  <Link href="/contact" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+                  <Link href="/devis" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
                     {t("hero.ctaPrimary")}
                     <ArrowUpRight className="size-4" aria-hidden="true" />
                   </Link>

@@ -12,7 +12,8 @@
     "menu": "Ouvrir le menu",
     "close": "Fermer le menu",
     "skip": "Aller au contenu",
-    "main": "Navigation principale"
+    "main": "Navigation principale",
+    "quote": "Devis"
   },
   "theme": {
     "toggle": "Changer de thème",
@@ -27,7 +28,7 @@
     "switchTo": "Read in English"
   },
   "hero": {
-    "ctaPrimary": "Parlons de votre projet",
+    "ctaPrimary": "Demander un devis",
     "ctaSecondary": "Voir mes projets",
     "basedIn": "Basé à",
     "since": "Depuis",
@@ -243,5 +244,87 @@
       "tooManyFiles": "5 fichiers au maximum.",
       "url": "Adresse web invalide."
     }
+  },
+  "quoteForm": {
+    "title": "Demander un devis",
+    "intro": "Quatre étapes rapides pour décrire votre projet. Je vous réponds en général sous 24 à 48 h avec une proposition ou des questions.",
+    "steps": {
+      "1": "Projet",
+      "2": "Besoin",
+      "3": "Budget et délai",
+      "4": "Coordonnées"
+    },
+    "stepOf": "Étape {current} sur {total}",
+    "next": "Continuer",
+    "back": "Retour",
+    "submit": "Envoyer la demande",
+    "projectType": "Quel type de projet ?",
+    "types": {
+      "showcase_site": "Site vitrine",
+      "web_app": "Application web",
+      "mobile_app": "Application mobile",
+      "ecommerce": "E-commerce",
+      "ai_integration": "Intégration IA",
+      "security_audit": "Audit de sécurité",
+      "training": "Formation ou mentorat",
+      "other": "Autre"
+    },
+    "services": "Services concernés (facultatif)",
+    "description": "Décrivez votre projet",
+    "descriptionHint": "Objectifs, utilisateurs, contexte. 30 caractères au minimum.",
+    "features": "Fonctionnalités souhaitées",
+    "featureList": {
+      "accounts": "Comptes utilisateurs",
+      "payments": "Paiements (Mobile Money, carte)",
+      "admin": "Back-office",
+      "multilingual": "Plusieurs langues",
+      "offline": "Fonctionnement hors ligne",
+      "notifications": "Notifications",
+      "analytics": "Statistiques",
+      "api": "API ou intégrations"
+    },
+    "featuresOther": "Autres fonctionnalités",
+    "hasDesign": "Avez-vous déjà des maquettes ?",
+    "yes": "Oui",
+    "no": "Non",
+    "referenceLinks": "Sites ou applications de référence",
+    "referenceHint": "Une adresse par ligne, facultatif.",
+    "attachments": "Pièces jointes",
+    "attachmentsHint": "PDF ou images, 5 fichiers et 10 Mo par fichier au maximum.",
+    "budget": "Budget envisagé",
+    "budgets": {
+      "lt500": "Moins de 500 USD",
+      "500_1500": "500 à 1 500 USD",
+      "1500_5000": "1 500 à 5 000 USD",
+      "5000_15000": "5 000 à 15 000 USD",
+      "gt15000": "Plus de 15 000 USD",
+      "unknown": "Je ne sais pas encore"
+    },
+    "currency": "Devise de paiement",
+    "currencyHint": "Le paiement en francs congolais est possible.",
+    "deadline": "Délai souhaité",
+    "deadlines": {
+      "asap": "Dès que possible",
+      "1_month": "Sous 1 mois",
+      "3_months": "Sous 3 mois",
+      "6_months": "Sous 6 mois",
+      "flexible": "Flexible"
+    },
+    "company": "Organisation (facultatif)",
+    "preferredContact": "Comment préférez-vous être recontacté ?",
+    "channels": {
+      "email": "E-mail",
+      "whatsapp": "WhatsApp",
+      "call": "Appel"
+    },
+    "draftRestored": "Votre brouillon a été restauré.",
+    "clearDraft": "Effacer",
+    "successTitle": "Demande envoyée, merci.",
+    "successText": "Un e-mail de confirmation vient de partir. Je reviens vers vous en général sous 24 à 48 h.",
+    "errors": {
+      "min30": "La description doit contenir au moins 30 caractères.",
+      "network": "Envoi impossible pour le moment. Vérifiez votre connexion et réessayez."
+    },
+    "remove": "Retirer"
   }
 }

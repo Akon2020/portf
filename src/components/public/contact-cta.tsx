@@ -28,7 +28,7 @@ export async function ContactCta({ locale, number }: { locale: string; number?: 
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/contact"
+            href="/devis"
             className="inline-flex h-11 items-center gap-2 rounded-full bg-primary-foreground px-5 text-sm font-semibold text-primary transition-transform hover:-translate-y-0.5"
           >
             {hero("ctaPrimary")}
