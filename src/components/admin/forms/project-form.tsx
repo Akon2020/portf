@@ -17,7 +17,7 @@ import { CATEGORY_OPTIONS, PROJECT_TYPE_OPTIONS, STAGE_OPTIONS, STATUS_OPTIONS }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-5 rounded-xl border bg-card/40 p-5 sm:p-6">
+    <section className="space-y-5 admin-card p-5 sm:p-6">
       <h2 className="font-sans text-base font-semibold tracking-normal">{title}</h2>
       {children}
     </section>

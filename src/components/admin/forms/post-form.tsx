@@ -27,7 +27,7 @@ export function PostForm({ action, post, library }: { action: Action; post?: Pos
     <EntityForm action={action}>
       {(errors) => (
         <>
-          <section className="space-y-5 rounded-xl border bg-card/40 p-5">
+          <section className="space-y-5 admin-card p-5">
             <div
               onInput={(event) => {
                 const target = event.target as HTMLInputElement;
@@ -87,7 +87,7 @@ export function PostForm({ action, post, library }: { action: Action; post?: Pos
             {(errors["content.fr"] || errors["content.en"]) && <p className="text-sm text-destructive">{errors["content.fr"] ?? errors["content.en"]}</p>}
           </section>
 
-          <section className="grid gap-5 rounded-xl border bg-card/40 p-5 lg:grid-cols-2">
+          <section className="grid gap-5 admin-card p-5 lg:grid-cols-2">
             <div className="space-y-4">
               <SelectField
                 name="status"
@@ -114,7 +114,7 @@ export function PostForm({ action, post, library }: { action: Action; post?: Pos
             <MediaPicker name="coverImageId" label="Image de couverture" library={library} defaultValue={post?.coverImageId ? [post.coverImageId] : []} />
           </section>
 
-          <section className="space-y-4 rounded-xl border bg-card/40 p-5">
+          <section className="space-y-4 admin-card p-5">
             <h2 className="font-sans text-base font-semibold tracking-normal">Référencement et validation</h2>
             <LocalizedField name="seoTitle" label="Titre SEO (facultatif)" defaultValue={post?.seoTitle} errors={errors} />
             <LocalizedField name="seoDescription" label="Description SEO (facultatif)" multiline rows={2} defaultValue={post?.seoDescription} errors={errors} />

@@ -28,7 +28,7 @@ export default async function ContentHubPage() {
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {SECTIONS.map(({ href, label, icon: Icon, key, text }) => (
           <li key={href}>
-            <Link href={`/admin/contenu/${href}`} className="flex h-full items-start gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-accent">
+            <Link href={`/admin/contenu/${href}`} className="flex h-full items-start gap-4 admin-card p-5 transition-colors hover:border-accent">
               <Icon className="mt-0.5 size-5 text-accent" aria-hidden="true" />
               <span className="flex-1">
                 <span className="flex items-center justify-between gap-2 font-medium">

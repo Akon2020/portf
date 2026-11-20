@@ -29,7 +29,7 @@ export default async function EntityListPage({ params }: { params: Promise<{ ent
       {rows.length === 0 ? (
         <EmptyState>Aucun élément pour le moment.</EmptyState>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border">
+        <ul className="admin-card divide-y overflow-hidden">
           {rows.map((row) => (
             <li key={row.id}>
               <Link href={`/admin/contenu/${entity}/${row.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-surface/40 sm:flex-row sm:items-center sm:justify-between">

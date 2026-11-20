@@ -71,13 +71,13 @@ export default async function QuoteRequestPage({ params }: { params: Promise<{ i
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <section className="rounded-xl border bg-card p-5">
+          <section className="admin-card p-5">
             <h2 className="mb-3 font-sans text-base font-semibold tracking-normal">Description</h2>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{request.description}</p>
           </section>
-          <section className="rounded-xl border bg-card p-5">
+          <section className="admin-card p-5">
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
               <Row label="Budget">{L.budget[request.budgetRange as keyof typeof L.budget] ?? "Non précisé"}</Row>
               <Row label="Devise de paiement">{request.currency}</Row>
@@ -108,7 +108,7 @@ export default async function QuoteRequestPage({ params }: { params: Promise<{ i
             </dl>
           </section>
           {request.attachments.length > 0 && (
-            <section className="rounded-xl border bg-card p-5">
+            <section className="admin-card p-5">
               <h2 className="mb-3 font-sans text-base font-semibold tracking-normal">Pièces jointes</h2>
               <ul className="flex flex-wrap gap-2">
                 {request.attachments.map((file) => (
@@ -125,7 +125,7 @@ export default async function QuoteRequestPage({ params }: { params: Promise<{ i
         </div>
 
         <aside className="space-y-4">
-          <section className="space-y-3 rounded-xl border bg-card p-5">
+          <section className="space-y-3 admin-card p-5">
             <h2 className="font-sans text-base font-semibold tracking-normal">Contact</h2>
             <p className="text-sm">
               <span className="block font-medium">{contact.name}</span>
@@ -144,7 +144,7 @@ export default async function QuoteRequestPage({ params }: { params: Promise<{ i
               </a>
             )}
           </section>
-          <section className="space-y-3 rounded-xl border bg-card p-5">
+          <section className="space-y-3 admin-card p-5">
             <h2 className="font-sans text-base font-semibold tracking-normal">Statut</h2>
             <p>
               <Badge tone="info">{L.status[request.status]}</Badge>
@@ -158,7 +158,7 @@ export default async function QuoteRequestPage({ params }: { params: Promise<{ i
             </div>
           </section>
           {linkedQuotes.length > 0 && (
-            <section className="space-y-2 rounded-xl border bg-card p-5">
+            <section className="space-y-2 admin-card p-5">
               <h2 className="font-sans text-base font-semibold tracking-normal">Devis liés</h2>
               <ul className="space-y-1 text-sm">
                 {linkedQuotes.map((quote) => (

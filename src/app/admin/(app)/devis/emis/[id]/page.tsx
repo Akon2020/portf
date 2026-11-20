@@ -83,7 +83,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     return (
       <>
         {header}
-        <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
           <QuoteEditor
             action={saveQuoteAction.bind(null, id)}
             initial={{
@@ -123,11 +123,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   return (
     <>
       {header}
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <section className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <section className="admin-card overflow-x-auto p-2">
+            <table className="admin-table min-w-[520px]">
+              <thead>
                 <tr className="border-b">
                   <th className="px-4 py-3 font-medium">Description</th>
                   <th className="px-4 py-3 text-right font-medium">Qté</th>
@@ -175,7 +175,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         </div>
 
         <aside className="space-y-4">
-          <section className="space-y-3 rounded-xl border bg-card p-5">
+          <section className="space-y-3 admin-card p-5">
             <h2 className="font-sans text-base font-semibold tracking-normal">Suivi</h2>
             <ul className="space-y-1.5 text-sm">
               <li>Émis le {dateOnly.format(new Date(`${quote.issueDate}T12:00:00Z`))}</li>

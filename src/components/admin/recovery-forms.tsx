@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import type { RecoveryState } from "@/server/actions/recovery";
 
 type Action = (state: RecoveryState, formData: FormData) => Promise<RecoveryState>;
@@ -43,16 +44,16 @@ export function RequestResetForm({ action }: { action: Action }) {
 
 export function ResetPasswordForm({ action }: { action: Action }) {
   const [state, formAction, pending] = useActionState(action, {});
-  if (state.done) return <Done>Mot de passe modifié. Toutes les sessions ont été fermées : reconnectez-vous avec votre code TOTP.</Done>;
+  if (state.done) return <Done>Mot de passe modifié. Toutes les sessions ont été fermées : reconnectez-vous.</Done>;
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="password">Nouveau mot de passe (12 caractères minimum)</Label>
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={12} required className="h-10" />
+        <PasswordInput id="password" name="password" autoComplete="new-password" minLength={12} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirmation">Confirmation</Label>
-        <Input id="confirmation" name="confirmation" type="password" autoComplete="new-password" minLength={12} required className="h-10" />
+        <PasswordInput id="confirmation" name="confirmation" autoComplete="new-password" minLength={12} required />
       </div>
       {state.error && (
         <p className="text-sm text-destructive" role="alert">

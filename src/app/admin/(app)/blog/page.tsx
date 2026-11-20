@@ -37,7 +37,7 @@ export default async function AdminBlogPage() {
       {rows.length === 0 ? (
         <EmptyState>Aucun article pour le moment.</EmptyState>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border">
+        <ul className="admin-card divide-y overflow-hidden">
           {rows.map((post) => {
             const live = post.live;
             return (

@@ -58,7 +58,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       {rows.length === 0 ? (
         <EmptyState>Aucune conversation.</EmptyState>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border">
+        <ul className="admin-card divide-y overflow-hidden">
           {rows.map((row) => (
             <li key={row.id}>
               <Link href={`/admin/messagerie/${row.id}`} className="flex gap-3 px-4 py-3 hover:bg-surface/40">

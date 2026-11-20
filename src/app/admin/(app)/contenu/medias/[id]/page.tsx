@@ -23,7 +23,7 @@ export default async function MediaEditPage({ params }: { params: Promise<{ id: 
   return (
     <>
       <PageHeader title={row.originalName ?? "Média"} back={{ href: "/admin/contenu/medias", label: "Médiathèque" }} />
-      <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-8 *:min-w-0 lg:grid-cols-2">
         <div className="space-y-3">
           {isImage ? (
             <img src={`/media/${preview}`} alt={row.alt.fr} className="w-full rounded-xl border bg-surface object-contain" />

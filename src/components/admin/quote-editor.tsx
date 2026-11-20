@@ -77,7 +77,7 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
 
   return (
     <form onSubmit={submitWithoutReset(formAction)} className="space-y-6" noValidate>
-      <section className="grid gap-4 rounded-xl border bg-card/40 p-5 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 admin-card p-5 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Objet du devis" error={errors.title} className="sm:col-span-2 lg:col-span-3">
           <input name="title" value={values.title} onChange={(event) => set("title", event.target.value)} className={input} aria-invalid={!!errors.title} />
         </Field>
@@ -113,7 +113,7 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
         </Field>
       </section>
 
-      <section className="rounded-xl border bg-card/40 p-5">
+      <section className="admin-card p-5">
         <h2 className="mb-4 font-sans text-base font-semibold tracking-normal">Lignes</h2>
         <div className="space-y-3">
           <div className="hidden grid-cols-[1fr_90px_140px_130px_40px] gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
@@ -200,7 +200,7 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-xl border bg-card/40 p-5 md:grid-cols-2">
+      <section className="grid gap-4 admin-card p-5 md:grid-cols-2">
         <Field label="Notes (visibles sur le devis)" error={errors.notes}>
           <textarea name="notes" rows={4} value={values.notes} onChange={(event) => set("notes", event.target.value)} className={cn(input, "h-auto py-2")} />
         </Field>
@@ -239,7 +239,7 @@ export function QuoteSendPanel({
   const [opening, startOpening] = useTransition();
 
   return (
-    <section className="space-y-4 rounded-xl border bg-card p-5">
+    <section className="space-y-4 admin-card p-5">
       <h2 className="font-sans text-base font-semibold tracking-normal">{alreadySent ? "Renvoyer" : "Envoyer"}</h2>
       {!alreadySent && <p className="text-xs text-muted-foreground">Le premier envoi attribue le numéro définitif et verrouille le devis.</p>}
       <form onSubmit={submitWithoutReset(formAction)} className="space-y-3">

@@ -56,7 +56,7 @@ export function TemplatesSettingsForm({ action, value }: { action: Action; value
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Modèles de réponse (laisser le titre vide pour supprimer)</legend>
             {replies.map((reply, index) => (
-              <div key={index} className="space-y-3 rounded-xl border bg-card/40 p-4">
+              <div key={index} className="space-y-3 admin-card p-4">
                 <TextField name={`replies[${index}].title`} label={`Titre du modèle ${index + 1}`} defaultValue={reply?.title} errors={errors} />
                 <TextAreaField name={`replies[${index}].body`} label="Texte" rows={5} defaultValue={reply?.body} errors={errors} />
               </div>

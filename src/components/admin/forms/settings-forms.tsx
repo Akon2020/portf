@@ -28,7 +28,7 @@ export function ProfileSettingsForm({ action, value, library }: { action: Action
               errors={errors}
             />
           </div>
-          <div className="rounded-xl border bg-card/40 p-5">
+          <div className="admin-card p-5">
             <CheckboxField name="available" label="Disponible pour de nouvelles collaborations" hint="Affiche le badge de disponibilité dans le hero" defaultChecked={value.available} />
             <div className="mt-4">
               <LocalizedField name="availabilityLabel" label="Texte du badge" required defaultValue={value.availabilityLabel} errors={errors} />
@@ -46,7 +46,7 @@ export function ProfileSettingsForm({ action, value, library }: { action: Action
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Valeurs (6 maximum, laisser vide pour retirer)</legend>
             {values.map((item, index) => (
-              <div key={index} className="space-y-3 rounded-xl border bg-card/40 p-4">
+              <div key={index} className="space-y-3 admin-card p-4">
                 <LocalizedField name={`values[${index}].title`} label={`Valeur ${index + 1}`} defaultValue={item?.title} errors={errors} />
                 <LocalizedField name={`values[${index}].text`} label="Description" multiline rows={2} defaultValue={item?.text} errors={errors} />
               </div>

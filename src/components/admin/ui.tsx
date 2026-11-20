@@ -6,13 +6,19 @@ import { cn } from "@/lib/utils";
 
 export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "success" | "warning" | "danger" | "info"; children: React.ReactNode }) {
   const tones = {
-    neutral: "bg-surface text-muted-foreground",
-    success: "bg-success/12 text-success",
-    warning: "bg-warning/12 text-warning",
-    danger: "bg-destructive/12 text-destructive",
-    info: "bg-info/12 text-info",
+    neutral: "border-border bg-surface text-muted-foreground",
+    success: "border-success/25 bg-success/10 text-success",
+    warning: "border-warning/25 bg-warning/10 text-warning",
+    danger: "border-destructive/25 bg-destructive/10 text-destructive",
+    info: "border-info/25 bg-info/10 text-info",
   };
-  return <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", tones[tone])}>{children}</span>;
+  const dots = { neutral: "bg-muted-foreground", success: "bg-success", warning: "bg-warning", danger: "bg-destructive", info: "bg-info" };
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium", tones[tone])}>
+      <span aria-hidden="true" className={cn("size-1.5 rounded-full", dots[tone])} />
+      {children}
+    </span>
+  );
 }
 
 /** Destructive action with a native confirmation, so it also works on mobile. */
@@ -37,7 +43,7 @@ export function ConfirmButton({
         if (window.confirm(confirmText)) start(() => void action());
       }}
       className={cn(
-        "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm disabled:opacity-50",
+        "inline-flex h-10 items-center gap-1.5 rounded-xl border bg-card px-3.5 text-sm disabled:opacity-50",
         variant === "danger" ? "text-destructive hover:bg-destructive/10" : "hover:bg-surface",
       )}
     >
@@ -54,7 +60,7 @@ export function ActionButton({ action, label, className }: { action: () => Promi
       type="button"
       disabled={pending}
       onClick={() => start(() => void action())}
-      className={cn("inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs hover:bg-surface disabled:opacity-50", className)}
+      className={cn("inline-flex h-9 items-center gap-1.5 rounded-xl border bg-card px-3 text-xs font-medium hover:bg-surface disabled:opacity-50", className)}
     >
       {pending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
       {label}
