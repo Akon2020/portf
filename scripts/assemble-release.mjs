@@ -41,6 +41,28 @@ if (bindings === 0) {
   process.exit(1);
 }
 
+// sharp is only partially traced (the cron bundle loads its ESM entry):
+// ship the whole package and its platform binaries (@img/sharp-*, libvips).
+const runtimePackages = ["sharp", "detect-libc", "semver", "@img/colour"];
+for (const name of runtimePackages) {
+  if (existsSync(`node_modules/${name}`)) {
+    cpSync(`node_modules/${name}`, `${out}/node_modules/${name}`, { recursive: true, dereference: true });
+  }
+}
+for (const name of existsSync("node_modules/@img") ? readdirSync("node_modules/@img") : []) {
+  if (!/^sharp-/.test(name)) continue;
+  cpSync(`node_modules/@img/${name}`, `${out}/node_modules/@img/${name}`, { recursive: true, dereference: true });
+}
+
+// Defensive clean-up: only runtime files are deployed.
+const notShipped = [
+  "src", "tests", "docs", "scripts", "cron", "release", "portfolio_data", ".claude",
+  "README.md", "CLAUDE.md", "components.json", "drizzle.config.ts", "eslint.config.mjs",
+  "next.config.ts", "postcss.config.mjs", "vitest.config.mts", "tsconfig.json", "tsconfig.tsbuildinfo",
+  "pnpm-lock.yaml", "pnpm-workspace.yaml", "release-server.log",
+];
+for (const entry of notShipped) rmSync(`${out}/${entry}`, { recursive: true, force: true });
+
 // Never ship local environment files.
 for (const file of [".env", ".env.local", ".env.production.local"]) {
   rmSync(`${out}/${file}`, { force: true });
@@ -51,6 +73,11 @@ try {
   commit = execSync("git rev-parse --short HEAD").toString().trim();
 } catch {
   // Not a git checkout.
+}
+const leftovers = readdirSync(out).filter((entry) => /[.](md|log|ts|tsx)$/.test(entry));
+if (leftovers.length > 0) {
+  console.error(`Fichiers inattendus dans la release : ${leftovers.join(", ")}`);
+  process.exit(1);
 }
 writeFileSync(`${out}/RELEASE`, `${commit}\n${new Date().toISOString()}\n`);
 console.log(`Release assemblée dans ${out}/ (${commit})`);
