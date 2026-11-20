@@ -14,7 +14,12 @@ export const siteConfig = {
   },
 } as const;
 
+/**
+ * Public URL of the site, read at runtime. NEXT_PUBLIC_ variables are frozen
+ * at build time by Next, so the server uses SITE_URL, set on the host.
+ */
 export function getSiteUrl(): URL {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL || "https://isaacakon.vercel.app";
+  const env = process.env as Record<string, string | undefined>;
+  const raw = env["SITE_URL"] || env["NEXT_PUBLIC_" + "SITE_URL"] || "http://localhost:3000";
   return new URL(raw);
 }

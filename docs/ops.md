@@ -45,7 +45,7 @@ Deux endroits, avec les mêmes valeurs :
 chmod 600 ~/portfolio/.env
 ```
 
-La liste complète est dans `.env.example`. Valeurs minimales : `NODE_ENV=production`, `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL`, `AUTH_ENCRYPTION_KEY` (32 octets en base64), `TRUST_PROXY=true`, `DATA_DIR=/home/<utilisateur>/portfolio_data`, `TZ=Africa/Lubumbashi`.
+La liste complète est dans `.env.example`. Valeurs minimales : `NODE_ENV=production`, `SITE_URL` (adresse publique du site, par exemple `https://isaacakonkwa.com`), `DATABASE_URL`, `AUTH_ENCRYPTION_KEY` (32 octets en base64), `TRUST_PROXY=true`, `DATA_DIR=/home/<utilisateur>/portfolio_data`, `TZ=Africa/Lubumbashi`.
 
 Générer `AUTH_ENCRYPTION_KEY` :
 
