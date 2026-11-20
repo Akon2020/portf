@@ -5,6 +5,7 @@ import { ContactCta } from "@/components/public/contact-cta";
 import { JourneyTimeline } from "@/components/public/journey-timeline";
 import { JsonLd } from "@/components/public/json-ld";
 import { MediaImage } from "@/components/public/media-image";
+import { PostCard } from "@/components/public/post-card";
 import { ProjectCard } from "@/components/public/project-card";
 import { SectionLabel, SectionTitle, sectionNumbers } from "@/components/public/section-heading";
 import { SkillsGrid } from "@/components/public/skills-grid";
@@ -15,6 +16,7 @@ import type { Locale } from "@/i18n/routing";
 import { tr } from "@/lib/localized";
 import { NBSP } from "@/lib/typography";
 import { pageMetadata } from "@/lib/seo";
+import { getLatestGalleryImages, getPublishedPosts } from "@/server/content/blog";
 import { personJsonLd } from "@/server/content/person";
 import {
   getApprovedTestimonials,
@@ -49,7 +51,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, profile, stats, socials, services, projects, journey, skills, testimonials, person] = await Promise.all([
+  const [t, profile, stats, socials, services, projects, journey, skills, testimonials, person, posts, galleryImages] = await Promise.all([
     getTranslations(),
     getSetting("profile"),
     getStats(),
@@ -60,7 +62,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
     getSkills(),
     getApprovedTestimonials(),
     personJsonLd(locale),
+    getPublishedPosts(),
+    getLatestGalleryImages(6),
   ]);
+  const latestPosts = posts.slice(0, 3);
   const portrait = await getMediaById(profile.portraitMediaId);
   const featured = (projects.some((project) => project.isFeatured) ? projects.filter((project) => project.isFeatured) : projects).slice(0, 4);
   const organizations = [...new Set(journey.map((item) => item.organization.split(" / ").at(-1)!))];
@@ -73,8 +78,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
     journey.length > 0 && "journey",
     skills.length > 0 && "stack",
     testimonials.length > 0 && "testimonials",
+    latestPosts.length > 0 && "blog",
+    galleryImages.length > 0 && "gallery",
     "contact",
-  ].filter(Boolean) as ("profile" | "expertise" | "projects" | "journey" | "stack" | "testimonials" | "contact")[];
+  ].filter(Boolean) as ("profile" | "expertise" | "projects" | "journey" | "stack" | "testimonials" | "blog" | "gallery" | "contact")[];
   const n = sectionNumbers(visible);
 
   return (
@@ -325,6 +332,60 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
                     </span>
                   </figcaption>
                 </figure>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Blog */}
+      {latestPosts.length > 0 && (
+        <section className="container-site mt-24" aria-labelledby="blog">
+          <SectionLabel number={n.blog} label={t("sections.blog")} />
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionTitle>
+              <span id="blog">{t("home.blogTitle")}</span>
+            </SectionTitle>
+            <Link href="/blog" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline decoration-accent underline-offset-4">
+              {t("home.blogAll")}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {latestPosts.map((post) => (
+              <li key={post.id}>
+                <PostCard post={post} locale={locale} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Gallery */}
+      {galleryImages.length > 0 && (
+        <section className="container-site mt-24" aria-labelledby="galerie">
+          <SectionLabel number={n.gallery} label={t("sections.gallery")} />
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionTitle>
+              <span id="galerie">{t("home.galleryTitle")}</span>
+            </SectionTitle>
+            <Link href="/galerie" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline decoration-accent underline-offset-4">
+              {t("home.galleryAll")}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {galleryImages.map((image) => (
+              <li key={image.id}>
+                <Link href={{ pathname: "/galerie/[slug]", params: { slug: image.albumSlug } }} className="group block overflow-hidden rounded-xl border">
+                  <MediaImage
+                    media={image.media}
+                    locale={locale}
+                    alt={tr(image.media.alt, locale) || tr(image.caption, locale)}
+                    sizes="(min-width: 768px) 33vw, 50vw"
+                    className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                </Link>
               </li>
             ))}
           </ul>

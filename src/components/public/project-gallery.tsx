@@ -16,7 +16,7 @@ export interface GalleryItem {
   blur: string | null;
 }
 
-export function ProjectGallery({ items }: { items: GalleryItem[] }) {
+export function ProjectGallery({ items, variant = "grid" }: { items: GalleryItem[]; variant?: "grid" | "masonry" }) {
   const t = useTranslations("project");
   const [index, setIndex] = useState<number | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -48,9 +48,9 @@ export function ProjectGallery({ items }: { items: GalleryItem[] }) {
 
   return (
     <>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className={variant === "masonry" ? "columns-1 gap-4 sm:columns-2 lg:columns-3 [&>li]:mb-4 [&>li]:break-inside-avoid" : "grid gap-4 sm:grid-cols-2"}>
         {items.map((item, position) => (
-          <li key={item.id} className={position === 0 && items.length % 2 === 1 ? "sm:col-span-2" : undefined}>
+          <li key={item.id} className={variant === "grid" && position === 0 && items.length % 2 === 1 ? "sm:col-span-2" : undefined}>
             <figure>
               <button
                 type="button"
@@ -61,13 +61,13 @@ export function ProjectGallery({ items }: { items: GalleryItem[] }) {
                 <img
                   src={item.src}
                   srcSet={item.srcSet || undefined}
-                  sizes="(min-width: 768px) 50vw, 100vw"
+                  sizes={variant === "masonry" ? "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" : "(min-width: 768px) 50vw, 100vw"}
                   width={item.width ?? undefined}
                   height={item.height ?? undefined}
                   alt=""
                   loading="lazy"
                   decoding="async"
-                  className="aspect-[16/10] w-full bg-cover bg-center object-cover transition-transform duration-500 hover:scale-[1.02]"
+                  className={`${variant === "masonry" ? "h-auto" : "aspect-[16/10]"} w-full bg-cover bg-center object-cover transition-transform duration-500 hover:scale-[1.02]`}
                   style={item.blur ? { backgroundImage: `url(${item.blur})` } : undefined}
                 />
               </button>

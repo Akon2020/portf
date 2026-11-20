@@ -20,7 +20,8 @@
     "create-admin": "tsx cron/index.ts create-admin",
     "prepare": "git config core.hooksPath .githooks || true",
     "seed": "tsx scripts/seed.ts base",
-    "seed:content": "tsx scripts/seed.ts content"
+    "seed:content": "tsx scripts/seed.ts content",
+    "import:post": "tsx scripts/import-post.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

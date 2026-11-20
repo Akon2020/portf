@@ -13,7 +13,9 @@
     "close": "Fermer le menu",
     "skip": "Aller au contenu",
     "main": "Navigation principale",
-    "quote": "Devis"
+    "quote": "Devis",
+    "blog": "Blog",
+    "gallery": "Galerie"
   },
   "theme": {
     "toggle": "Changer de thème",
@@ -41,7 +43,9 @@
     "journey": "Parcours",
     "stack": "Stack technique",
     "testimonials": "Témoignages",
-    "contact": "Contact"
+    "contact": "Contact",
+    "blog": "Blog",
+    "gallery": "Galerie"
   },
   "home": {
     "trustLabel": "Organisations et communautés",
@@ -54,7 +58,11 @@
     "journeyTitle": "Une trajectoire guidée par l’apprentissage et l’impact.",
     "stackTitle": "Des outils choisis pour résoudre les bons problèmes, pas pour remplir une liste.",
     "testimonialsTitle": "Ce qu’en disent celles et ceux qui ont travaillé avec moi.",
-    "otherNeed": "Un besoin différent ? Parlons-en."
+    "otherNeed": "Un besoin différent ? Parlons-en.",
+    "blogTitle": "Notes de terrain sur le code, la sécurité et le produit.",
+    "blogAll": "Tous les articles",
+    "galleryTitle": "Ateliers, conférences et moments de communauté.",
+    "galleryAll": "Voir la galerie"
   },
   "journey": {
     "filterLabel": "Filtrer le parcours",
@@ -326,5 +334,46 @@
       "network": "Envoi impossible pour le moment. Vérifiez votre connexion et réessayez."
     },
     "remove": "Retirer"
+  },
+  "blog": {
+    "title": "Blog",
+    "intro": "Retours d’expérience, guides pratiques et réflexions sur le développement web, mobile, l’IA et la sécurité.",
+    "search": "Rechercher un article",
+    "searchButton": "Rechercher",
+    "all": "Tous",
+    "categories": "Catégories",
+    "tags": "Étiquettes",
+    "empty": "Aucun article ne correspond à cette recherche.",
+    "emptyAll": "Les premiers articles arrivent bientôt.",
+    "readingTime": "{minutes} min de lecture",
+    "read": "Lire l’article",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "pageOf": "Page {current} sur {total}",
+    "pagination": "Pagination",
+    "back": "Tous les articles",
+    "toc": "Sommaire",
+    "share": "Partager",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié",
+    "shareOn": "Partager sur {network}",
+    "related": "À lire aussi",
+    "publishedOn": "Publié le {date}",
+    "updatedOn": "Mis à jour le {date}",
+    "onlyEnglish": "Cet article est disponible en anglais uniquement.",
+    "onlyFrench": "Cet article est disponible en français uniquement.",
+    "authorTitle": "À propos de l’auteur",
+    "rss": "Flux RSS",
+    "resultsFor": "Résultats pour « {query} »",
+    "filteredBy": "Filtré par {filter}",
+    "clear": "Effacer les filtres"
+  },
+  "gallery": {
+    "title": "Galerie",
+    "intro": "Conférences, ateliers et moments de communauté, de Bukavu à Bujumbura.",
+    "empty": "Les premiers albums arrivent bientôt.",
+    "photos": "{count, plural, =0 {Aucune photo} one {# photo} other {# photos}}",
+    "back": "Tous les albums",
+    "view": "Voir l’album"
   }
 }
