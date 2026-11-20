@@ -1,24 +1,17 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import type { SessionKind } from "../db/schema";
+import { SECURE_COOKIES, SESSION_COOKIES } from "./cookie-names";
 import { SESSION_POLICIES } from "./policy";
 import { validateSessionToken, type ValidatedSession } from "./session-store";
 
-const secureCookies = process.env.NODE_ENV === "production";
-
-/**
- * The __Host- prefix requires Secure, which browsers refuse on plain http.
- * Production always runs behind HTTPS, development uses unprefixed names.
- */
-export const SESSION_COOKIES: Record<SessionKind, string> = secureCookies
-  ? { admin: "__Host-session", client: "__Host-client" }
-  : { admin: "session", client: "client" };
+export { SESSION_COOKIES };
 
 export async function setSessionCookie(kind: SessionKind, token: string, maxAgeMs?: number) {
   const store = await cookies();
   store.set(SESSION_COOKIES[kind], token, {
     httpOnly: true,
-    secure: secureCookies,
+    secure: SECURE_COOKIES,
     sameSite: "lax",
     path: "/",
     // The database enforces the sliding expiry, the cookie lives until the absolute limit.
