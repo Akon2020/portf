@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { submitWithoutReset } from "@/lib/use-form-submit";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,7 +41,7 @@ const initialState: AuthFormState = {};
 export function LoginForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(loginAction, initialState);
   return (
-    <form action={action} className="space-y-5" noValidate>
+    <form onSubmit={submitWithoutReset(action)} className="space-y-5" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       <div className="space-y-2">
         <Label htmlFor="email">Adresse e-mail</Label>

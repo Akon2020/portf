@@ -206,5 +206,42 @@
     "title": "Something went wrong",
     "text": "The issue has been logged. Please try again in a moment.",
     "retry": "Try again"
+  },
+  "contactForm": {
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone or WhatsApp",
+    "phoneHint": "Optional, international format if possible.",
+    "topic": "Subject",
+    "message": "Your message",
+    "messageHint": "{count} characters, 50 minimum.",
+    "consent": "I agree that my details are used to reply to me.",
+    "privacy": "Privacy policy",
+    "submit": "Send message",
+    "successTitle": "Message sent, thank you.",
+    "successText": "A confirmation email is on its way. I usually reply within 24 to 48 hours.",
+    "topics": {
+      "project": "Project",
+      "collaboration": "Collaboration",
+      "recruitment": "Hiring",
+      "mentoring": "Mentoring",
+      "other": "Other"
+    },
+    "errors": {
+      "required": "This field is required.",
+      "email": "Invalid email address.",
+      "phone": "Invalid phone number.",
+      "min50": "Your message must be at least 50 characters long.",
+      "tooLong": "This text is too long.",
+      "consent": "Please agree to the use of your details to reply to you.",
+      "rateLimited": "Too many messages from your connection. Try again in an hour or write directly by email.",
+      "turnstile": "The anti bot check failed. Reload the page and try again.",
+      "expired": "The form has expired. Reload the page and try again.",
+      "invalid": "Invalid value.",
+      "fileType": "File format not accepted (PDF or image).",
+      "fileSize": "File too large (10 MB maximum).",
+      "tooManyFiles": "5 files maximum.",
+      "url": "Invalid web address."
+    }
   }
 }

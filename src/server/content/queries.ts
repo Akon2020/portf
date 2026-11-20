@@ -68,14 +68,14 @@ async function loadMediaMap(ids: (string | null | undefined)[]): Promise<Map<str
 
 // Settings
 
-async function readSetting<K extends SettingsKey>(key: K): Promise<SettingsValue<K>> {
+export async function readSettingUncached<K extends SettingsKey>(key: K): Promise<SettingsValue<K>> {
   const [row] = await getDb().select().from(settings).where(eq(settings.key, key)).limit(1);
   const merged = { ...DEFAULT_SETTINGS[key], ...((row?.value as object | undefined) ?? {}) };
   const parsed = SETTINGS_SCHEMAS[key].safeParse(merged);
   return (parsed.success ? parsed.data : DEFAULT_SETTINGS[key]) as SettingsValue<K>;
 }
 
-export const getSetting = unstable_cache(readSetting, ["setting"], { tags: [TAGS.settings], revalidate: ONE_DAY }) as <
+export const getSetting = unstable_cache(readSettingUncached, ["setting"], { tags: [TAGS.settings], revalidate: ONE_DAY }) as <
   K extends SettingsKey,
 >(
   key: K,

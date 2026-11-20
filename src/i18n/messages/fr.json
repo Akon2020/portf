@@ -206,5 +206,42 @@
     "title": "Une erreur est survenue",
     "text": "Le problème a été enregistré. Réessayez dans un instant.",
     "retry": "Réessayer"
+  },
+  "contactForm": {
+    "name": "Nom complet",
+    "email": "Adresse e-mail",
+    "phone": "Téléphone ou WhatsApp",
+    "phoneHint": "Facultatif, au format international si possible.",
+    "topic": "Sujet",
+    "message": "Votre message",
+    "messageHint": "{count} caractères, 50 au minimum.",
+    "consent": "J’accepte que mes informations soient utilisées pour me répondre.",
+    "privacy": "Politique de confidentialité",
+    "submit": "Envoyer le message",
+    "successTitle": "Message envoyé, merci.",
+    "successText": "Un e-mail de confirmation vient de partir. Je vous réponds en général sous 24 à 48 h.",
+    "topics": {
+      "project": "Projet",
+      "collaboration": "Collaboration",
+      "recruitment": "Recrutement",
+      "mentoring": "Mentorat",
+      "other": "Autre"
+    },
+    "errors": {
+      "required": "Ce champ est obligatoire.",
+      "email": "Adresse e-mail invalide.",
+      "phone": "Numéro de téléphone invalide.",
+      "min50": "Votre message doit contenir au moins 50 caractères.",
+      "tooLong": "Ce texte est trop long.",
+      "consent": "Merci d’accepter l’utilisation de vos informations pour vous répondre.",
+      "rateLimited": "Trop de messages envoyés depuis votre connexion. Réessayez dans une heure ou écrivez directement par e-mail.",
+      "turnstile": "La vérification anti-robot a échoué. Rechargez la page et réessayez.",
+      "expired": "Le formulaire a expiré. Rechargez la page et réessayez.",
+      "invalid": "Valeur invalide.",
+      "fileType": "Format de fichier non accepté (PDF ou image).",
+      "fileSize": "Fichier trop volumineux (10 Mo maximum).",
+      "tooManyFiles": "5 fichiers au maximum.",
+      "url": "Adresse web invalide."
+    }
   }
 }

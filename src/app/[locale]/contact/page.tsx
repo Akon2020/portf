@@ -1,6 +1,7 @@
 import { ArrowUpRight, CalendarDays, Clock, Mail, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ContactForm } from "@/components/public/contact-form";
 import { SectionLabel } from "@/components/public/section-heading";
 import { SocialLinks } from "@/components/public/social-links";
 import type { Locale } from "@/i18n/routing";
@@ -8,6 +9,7 @@ import { tr } from "@/lib/localized";
 import { pageMetadata } from "@/lib/seo";
 import { whatsappLink } from "@/lib/whatsapp";
 import { getSetting, getSocialLinks } from "@/server/content/queries";
+import { createFormToken, turnstileSiteKey } from "@/server/services/anti-spam";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -15,8 +17,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return pageMetadata({ locale, href: "/contact", title: t("title"), description: t("intro") });
 }
 
-export default async function ContactPage({ params }: { params: Promise<{ locale: Locale }> }) {
+export default async function ContactPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: Locale }>;
+  searchParams: Promise<{ sujet?: string }>;
+}) {
   const { locale } = await params;
+  const { sujet } = await searchParams;
   setRequestLocale(locale);
   const [t, contact, socials] = await Promise.all([getTranslations("contact"), getSetting("contact"), getSocialLinks()]);
   const wa = contact.whatsapp ? whatsappLink(contact.whatsapp, t("whatsappMessage")) : null;
@@ -46,10 +55,12 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
             <Clock className="size-4 text-accent" aria-hidden="true" />
             {tr(contact.responseTime, locale)}
           </p>
-          <p className="mt-10 max-w-xl rounded-xl border border-dashed p-5 text-sm text-muted-foreground">{t("formSoon")}</p>
+          <div className="mt-10">
+            <ContactForm formToken={createFormToken()} siteKey={turnstileSiteKey()} defaultTopic={sujet} />
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           {channels.map((channel) => (
             <a
               key={channel.label}

@@ -12,6 +12,8 @@ const LEGACY_IMAGE_HOSTS = [
   "https://images.unsplash.com",
 ];
 
+const TURNSTILE = "https://challenges.cloudflare.com";
+
 export interface CspOptions {
   /** Per request nonce. Only dynamic pages can use one. */
   nonce?: string;
@@ -29,8 +31,10 @@ export function buildCsp({ nonce, dev = false }: CspOptions): string {
   if (nonce) scriptSrc.push(`'nonce-${nonce}'`, "'strict-dynamic'");
   else scriptSrc.push("'unsafe-inline'");
   if (dev) scriptSrc.push("'unsafe-eval'");
+  // Cloudflare Turnstile on public forms.
+  scriptSrc.push(TURNSTILE);
 
-  const connectSrc = ["'self'"];
+  const connectSrc = ["'self'", TURNSTILE];
   if (dev) connectSrc.push("ws:", "wss:");
 
   const directives: Record<string, string[]> = {
@@ -40,7 +44,7 @@ export function buildCsp({ nonce, dev = false }: CspOptions): string {
     "img-src": ["'self'", "data:", "blob:", ...LEGACY_IMAGE_HOSTS],
     "font-src": ["'self'", "data:"],
     "connect-src": connectSrc,
-    "frame-src": ["'self'"],
+    "frame-src": ["'self'", TURNSTILE],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
     "object-src": ["'none'"],
