@@ -1,0 +1,50 @@
+name: Deploy
+
+# Manual deployment to the cPanel host. Required repository secrets:
+#   SSH_HOST, SSH_PORT, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS, APP_DIR (for example /home/user/portfolio)
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:chars
+      - run: pnpm build
+      - run: pnpm build:cron
+      - run: node scripts/assemble-release.mjs
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Upload release
+        env:
+          SSH: ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }}
+        run: |
+          rsync -az --delete \
+            --exclude 'tmp/' --exclude '.env*' --exclude 'stderr.log' \
+            -e "$SSH" release/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.APP_DIR }}/"
+
+      - name: Migrate, check and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "cd '${{ secrets.APP_DIR }}' && node dist/migrate.js && node dist/cron.js healthcheck && mkdir -p tmp && touch tmp/restart.txt"
