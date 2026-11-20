@@ -122,9 +122,9 @@ export function QuoteForm({
       const saved = localStorage.getItem(DRAFT_KEY);
       if (!saved) return;
       const draft = JSON.parse(saved) as Partial<Values>;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one time restore after hydration
       const hasContent = Boolean(draft.projectType || draft.description?.trim() || draft.name?.trim() || draft.email?.trim());
       if (!hasContent) return;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one time restore after hydration
       setValues((current) => ({ ...current, ...draft, consent: false, services: initialService ? current.services : (draft.services ?? []) }));
       setRestored(true);
     } catch {
