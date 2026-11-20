@@ -5,7 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
 import { QuoteEditor, QuoteSendPanel } from "@/components/admin/quote-editor";
-import { ActionButton, Badge, ConfirmButton } from "@/components/admin/ui";
+import { Badge, ConfirmButton } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/money";
 import {
   convertQuoteAction,
@@ -204,14 +204,37 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             <section className="space-y-3 rounded-xl border border-success/40 bg-success/5 p-5">
               <h2 className="font-sans text-base font-semibold tracking-normal">Conversion</h2>
               {quote.convertedAt ? (
-                <p className="text-sm">Client créé ou rattaché le {dateTime.format(quote.convertedAt)}.</p>
+                <div className="space-y-2 text-sm">
+                  <p>Converti le {dateTime.format(quote.convertedAt)}.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {quote.clientId && (
+                      <Link href={`/admin/clients/${quote.clientId}`} className="inline-flex h-9 items-center rounded-xl border bg-card px-3 text-sm hover:bg-surface">
+                        Fiche client
+                      </Link>
+                    )}
+                    {quote.clientProjectId && (
+                      <Link href={`/admin/clients/projets/${quote.clientProjectId}`} className="inline-flex h-9 items-center rounded-xl border bg-card px-3 text-sm hover:bg-surface">
+                        Projet client
+                      </Link>
+                    )}
+                  </div>
+                </div>
               ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Crée ou rattache la fiche client. Le projet client, les jalons et la facture d&apos;acompte arriveront avec le module de facturation.
-                  </p>
-                  <ActionButton action={convertQuoteAction.bind(null, id)} label="Convertir en client" />
-                </>
+                <form action={convertQuoteAction.bind(null, id)} className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Crée en une fois le client, le projet client et, si vous le souhaitez, les jalons et la facture d&apos;acompte.</p>
+                  <label className="block space-y-1.5 text-sm">
+                    <span className="font-medium">Acompte (%)</span>
+                    <input name="depositPercent" type="number" min={0} max={100} defaultValue={30} className="h-10 w-28 rounded-lg border bg-card px-3 text-sm" />
+                    <span className="block text-xs text-muted-foreground">0 pour ne pas créer de facture d&apos;acompte.</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="milestones" value="1" defaultChecked className="size-4 accent-[var(--accent)]" />
+                    Créer un jalon par ligne du devis
+                  </label>
+                  <button type="submit" className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-accent-foreground hover:bg-accent/90">
+                    Convertir
+                  </button>
+                </form>
               )}
             </section>
           )}

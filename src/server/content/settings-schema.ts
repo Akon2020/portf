@@ -73,6 +73,7 @@ export const issuerSettingsSchema = z.object({
   footer: z.string().trim().max(600).default(""),
   quoteValidityDays: z.coerce.number().int().min(1).max(365).default(30),
   quoteTerms: z.string().trim().max(3000).default(""),
+  invoiceTerms: z.string().trim().max(3000).default(""),
   exchangeRate: z.string().trim().max(20).default(""),
 });
 
@@ -82,6 +83,9 @@ export const templatesSettingsSchema = z.object({
     .max(30)
     .default([]),
   whatsappQuote: z.string().trim().max(1000).default(""),
+  whatsappInvoice: z.string().trim().max(1000).default(""),
+  whatsappReminder: z.string().trim().max(1000).default(""),
+  whatsappReceipt: z.string().trim().max(1000).default(""),
 });
 
 export type ProfileSettings = z.infer<typeof profileSettingsSchema>;
@@ -167,6 +171,7 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
     footer: "",
     quoteValidityDays: 30,
     quoteTerms: "",
+    invoiceTerms: "",
     exchangeRate: "",
   },
   templates: {
@@ -190,5 +195,10 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
     ],
     whatsappQuote:
       "Bonjour {client}, voici votre devis {numero} d'un montant de {total}, valable jusqu'au {validite}. Vous pouvez le consulter et l'accepter ici : {lien}. Merci, Isaac Akonkwa.",
+    whatsappInvoice:
+      "Bonjour {client}, voici votre facture {numero} d'un montant de {total}, à régler avant le {echeance}. Vous pouvez la consulter et la télécharger ici : {lien}. Merci, Isaac Akonkwa.",
+    whatsappReminder:
+      "Bonjour {client}, petit rappel concernant la facture {numero} : il reste {solde} à régler (échéance le {echeance}). Vous pouvez la consulter ici : {lien}. Merci, Isaac Akonkwa.",
+    whatsappReceipt: "Bonjour {client}, merci pour votre paiement de {montant} (facture {facture}). Voici votre reçu {numero} : {lien}. Isaac Akonkwa.",
   },
 };

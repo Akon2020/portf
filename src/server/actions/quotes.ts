@@ -100,9 +100,14 @@ export async function deleteQuoteAction(id: string): Promise<void> {
   redirect("/admin/devis/emis");
 }
 
-export async function convertQuoteAction(id: string): Promise<void> {
-  await convertQuote(id, await actor());
+export async function convertQuoteAction(id: string, formData: FormData): Promise<void> {
+  const percent = Number(String(formData.get("depositPercent") ?? "0").replace(",", "."));
+  const result = await convertQuote(id, await actor(), {
+    depositPercent: Number.isFinite(percent) ? Math.min(100, Math.max(0, Math.round(percent))) : 0,
+    milestones: formData.get("milestones") === "1",
+  });
   revalidatePath(`/admin/devis/emis/${id}`);
+  redirect(result.invoiceId ? `/admin/facturation/${result.invoiceId}` : `/admin/clients/projets/${result.projectId}`);
 }
 
 export async function setRequestStatusAction(id: string, status: QuoteRequest["status"]): Promise<void> {

@@ -187,3 +187,68 @@ export function SecurityEmail({
     </EmailLayout>
   );
 }
+
+/** Invoice, receipt or reminder: a short text, a button to the private document page. */
+export function DocumentEmail({
+  preview,
+  greeting,
+  paragraphs,
+  cta,
+  url,
+  help,
+  locale,
+  message,
+}: {
+  preview: string;
+  greeting: string;
+  paragraphs: string[];
+  cta: string;
+  url: string;
+  help: string;
+  locale: Locale;
+  message?: string;
+}) {
+  return (
+    <EmailLayout preview={preview} locale={locale}>
+      <Text style={paragraph}>{greeting}</Text>
+      {message ? <Text style={{ ...paragraph, whiteSpace: "pre-line" }}>{message}</Text> : null}
+      {paragraphs.map((line) => (
+        <Text key={line} style={paragraph}>
+          {line}
+        </Text>
+      ))}
+      <Section style={{ margin: "8px 0 18px" }}>
+        <Button href={url} style={button}>
+          {cta}
+        </Button>
+      </Section>
+      <Text style={muted}>{help}</Text>
+      <Text style={paragraph}>Isaac Akonkwa</Text>
+    </EmailLayout>
+  );
+}
+
+/** Magic link of the client portal. */
+export function MagicLinkEmail({ name, url, locale }: { name: string; url: string; locale: Locale }) {
+  const fr = locale === "fr";
+  return (
+    <EmailLayout preview={fr ? "Votre lien de connexion" : "Your sign-in link"} locale={locale}>
+      <Text style={paragraph}>{fr ? `Bonjour ${name},` : `Hello ${name},`}</Text>
+      <Text style={paragraph}>
+        {fr
+          ? "Voici votre lien pour accéder à votre espace client. Il est valable 15 minutes et ne peut servir qu'une fois."
+          : "Here is your link to open your client space. It is valid for 15 minutes and can only be used once."}
+      </Text>
+      <Section style={{ margin: "8px 0 18px" }}>
+        <Button href={url} style={button}>
+          {fr ? "Accéder à mon espace" : "Open my client space"}
+        </Button>
+      </Section>
+      <Text style={muted}>
+        {fr
+          ? "Si vous n'avez pas demandé ce lien, ignorez simplement ce message : personne ne pourra se connecter sans lui."
+          : "If you did not ask for this link, simply ignore this message: nobody can sign in without it."}
+      </Text>
+    </EmailLayout>
+  );
+}

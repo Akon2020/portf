@@ -31,8 +31,8 @@ export interface Actor extends RequestMeta {
   id: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
-const addDays = (date: string, days: number) => new Date(new Date(`${date}T12:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
+export const today = () => new Date().toISOString().slice(0, 10);
+export const addDays = (date: string, days: number) => new Date(new Date(`${date}T12:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
 
 export function publicQuoteUrl(token: string): string {
   return new URL(`/f/${token}`, getSiteUrl()).toString();
@@ -55,7 +55,8 @@ const money = (code: string) =>
       return cents;
     });
 
-export const quoteInputSchema = z.object({
+/** Fields shared by quotes and invoices. */
+export const documentBaseSchema = z.object({
   title: z.string().trim().min(2, "Obligatoire").max(200),
   recipientName: z.string().trim().min(2, "Obligatoire").max(160),
   recipientEmail: z
@@ -68,7 +69,6 @@ export const quoteInputSchema = z.object({
   locale: z.enum(["fr", "en"]),
   currency: z.enum(["USD", "CDF"]),
   issueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
-  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
   exchangeRate: z
     .string()
     .trim()
@@ -115,7 +115,11 @@ export const quoteInputSchema = z.object({
       });
       return items;
     }),
-}).refine((value) => value.validUntil >= value.issueDate, { message: "La validité doit suivre la date d'émission", path: ["validUntil"] });
+});
+
+export const quoteInputSchema = documentBaseSchema
+  .extend({ validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide") })
+  .refine((value) => value.validUntil >= value.issueDate, { message: "La validité doit suivre la date d'émission", path: ["validUntil"] });
 
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 
@@ -392,16 +396,70 @@ export async function expireQuotes(): Promise<number> {
   return rows.length;
 }
 
+export interface ConversionResult {
+  clientId: string;
+  projectId: string;
+  invoiceId: string | null;
+}
+
 /**
- * Accepted quote: creates or links the client. Client project, milestones and
- * deposit invoice are added by the CRM and invoicing module.
+ * Accepted quote, in one step: client (created or linked), client project,
+ * optional milestones (one per quote line) and optional deposit invoice draft.
  */
-export async function convertQuote(id: string, actor: Actor): Promise<string> {
+export async function convertQuote(
+  id: string,
+  actor: Actor,
+  options: { depositPercent?: number; milestones?: boolean } = {},
+): Promise<ConversionResult> {
   const db = getDb();
   const data = await getQuote(id);
   if (!data) throw new QuoteError("Devis introuvable.");
-  const { quote } = data;
+  const { quote, items } = data;
   if (quote.status !== "accepted") throw new QuoteError("Seul un devis accepté peut être converti.");
+  if (quote.convertedAt && quote.clientId && quote.clientProjectId) {
+    return { clientId: quote.clientId, projectId: quote.clientProjectId, invoiceId: null };
+  }
+  const clientId = await ensureClient(quote, actor);
+  const { clientProjects, milestones } = await import("../db/schema");
+  const [project] = await db
+    .insert(clientProjects)
+    .values({
+      clientId,
+      name: quote.title,
+      description: quote.notes,
+      status: "planned",
+      startDate: today(),
+      budget: quote.total,
+      currency: quote.currency,
+      visibleToClient: true,
+      quoteId: quote.id,
+    })
+    .returning({ id: clientProjects.id });
+  if (options.milestones && items.length > 0) {
+    await db.insert(milestones).values(
+      items.map((item, index) => ({ clientProjectId: project.id, title: item.description.slice(0, 200), amount: item.total, sortOrder: index, visibleToClient: true })),
+    );
+  }
+  let invoiceId: string | null = null;
+  if (options.depositPercent && options.depositPercent > 0) {
+    const { createInvoiceDraft } = await import("./invoices");
+    invoiceId = await createInvoiceDraft({ clientId, clientProjectId: project.id, quoteId: quote.id, depositPercent: options.depositPercent }, actor);
+  }
+  await db.update(quotes).set({ clientId, clientProjectId: project.id, convertedAt: new Date() }).where(eq(quotes.id, id));
+  await writeAudit({
+    actorId: actor.id,
+    action: "quote.converted",
+    entityType: "quote",
+    entityId: id,
+    diff: { clientId, projectId: project.id, invoiceId },
+    ip: actor.ip,
+    userAgent: actor.userAgent,
+  });
+  return { clientId, projectId: project.id, invoiceId };
+}
+
+async function ensureClient(quote: Quote, actor: Actor): Promise<string> {
+  const db = getDb();
   let clientId = quote.clientId;
   if (!clientId && quote.contactId) clientId = await convertContactToClient(quote.contactId, actor.id, actor);
   if (!clientId) {
@@ -411,8 +469,6 @@ export async function convertQuote(id: string, actor: Actor): Promise<string> {
       .returning({ id: clients.id });
     clientId = client.id;
   }
-  await db.update(quotes).set({ clientId, convertedAt: new Date() }).where(eq(quotes.id, id));
-  await writeAudit({ actorId: actor.id, action: "quote.converted", entityType: "quote", entityId: id, diff: { clientId }, ip: actor.ip, userAgent: actor.userAgent });
   return clientId;
 }
 

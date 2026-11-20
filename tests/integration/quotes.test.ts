@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "@/server/db";
-import { clients, documentSends, quotes, users } from "@/server/db/schema";
+import { clients, documentSends, quotes, users, clientProjects, invoices, milestones } from "@/server/db/schema";
 import { renderQuotePdf } from "@/pdf/render";
 import { nextDocumentNumber } from "@/server/services/sequences";
 import {
@@ -147,9 +147,20 @@ describe.skipIf(!hasTestDatabase)("quotes", () => {
     expect(accepted.acceptedBy).toBe("Amani Bahati");
     expect(accepted.acceptedIp).toBe(meta.ip);
 
-    const clientId = await convertQuote(id, user);
-    const [client] = await getDb().select().from(clients).where(eq(clients.id, clientId));
+    const result = await convertQuote(id, user, { depositPercent: 30, milestones: true });
+    const [client] = await getDb().select().from(clients).where(eq(clients.id, result.clientId));
     expect(client.name).toBe("Coop Kivu");
+    const [project] = await getDb().select().from(clientProjects).where(eq(clientProjects.id, result.projectId));
+    expect(project.clientId).toBe(result.clientId);
+    expect(project.budget).toBe(accepted.total);
+    const projectMilestones = await getDb().select().from(milestones).where(eq(milestones.clientProjectId, result.projectId));
+    expect(projectMilestones.length).toBeGreaterThan(0);
+    const [deposit] = await getDb().select().from(invoices).where(eq(invoices.id, result.invoiceId!));
+    expect(deposit.kind).toBe("deposit");
+    expect(deposit.status).toBe("draft");
+    expect(deposit.total).toBe(Math.round(accepted.total * 0.3));
+    // Converting twice never duplicates the project.
+    expect((await convertQuote(id, user)).projectId).toBe(result.projectId);
   });
 
   it("expires quotes past their validity", async () => {
