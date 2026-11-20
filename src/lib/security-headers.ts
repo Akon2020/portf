@@ -1,6 +1,6 @@
 /** Content Security Policy and security headers shared by the proxy and next.config. */
 
-export const PRIVATE_PREFIXES = ["/admin", "/espace-client", "/f/"] as const;
+export const PRIVATE_PREFIXES = ["/admin", "/auth", "/espace-client", "/f/"] as const;
 
 export function isPrivatePath(pathname: string): boolean {
   return PRIVATE_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix));

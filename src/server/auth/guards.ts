@@ -26,7 +26,7 @@ export async function requireAdmin(
     result && result.session.twoFactorVerified && roles.includes(result.user.role);
   if (!allowed) {
     if (options.redirectTo === false) throw new AuthError();
-    redirect(options.redirectTo ?? "/admin/login");
+    redirect(options.redirectTo ?? "/auth/login");
   }
   return result;
 }

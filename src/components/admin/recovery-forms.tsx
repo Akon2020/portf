@@ -17,7 +17,7 @@ function Done({ children }: { children: React.ReactNode }) {
         <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>{children}</span>
       </p>
-      <Link href="/admin/login" className="text-sm underline underline-offset-4">
+      <Link href="/auth/login" className="text-sm underline underline-offset-4">
         Retour à la connexion
       </Link>
     </div>

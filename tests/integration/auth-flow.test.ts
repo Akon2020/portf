@@ -1,16 +1,18 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "@/server/db";
-import { jobs, loginAttempts, sessions, users } from "@/server/db/schema";
-import { hashPassword } from "@/server/auth/password";
+import { jobs, loginAttempts, users } from "@/server/db/schema";
+import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { RATE_LIMITS, consumeRateLimit } from "@/server/auth/rate-limit";
-import { validateSessionToken } from "@/server/auth/session-store";
+import { createSession, validateSessionToken } from "@/server/auth/session-store";
 import { consumeAuthToken, issueAuthToken, peekAuthToken } from "@/server/auth/tokens";
 import { currentTotpStep, generateTotpCode } from "@/server/auth/totp";
 import {
-  confirmTotpSetup,
+  beginTotpEnrollment,
+  changePassword,
+  confirmTotpEnrollment,
+  disableTotp,
   loginWithPassword,
-  startTotpSetup,
   verifySecondFactor,
 } from "@/server/services/auth";
 import { hasTestDatabase, prepareTestDatabase } from "./helpers";
@@ -26,16 +28,14 @@ async function createAdmin(email = "admin@example.test") {
   return user;
 }
 
-/** Logs in and enables TOTP, returns the secret and the full session token. */
+/** Enables TOTP from the account page, returns the secret and the backup codes. */
 async function enrolledAdmin() {
   const user = await createAdmin();
-  const login = await loginWithPassword({ email: user.email, password: PASSWORD }, meta);
-  if (!login.ok) throw new Error("login failed");
-  const setup = await startTotpSetup(login.token);
+  const enrollment = await beginTotpEnrollment(user.id);
   const now = Date.now();
-  const confirm = await confirmTotpSetup(login.token, generateTotpCode(setup!.secret, now), meta);
-  if (!confirm.ok) throw new Error("setup failed");
-  return { user, secret: setup!.secret, setupStep: currentTotpStep(now), confirm };
+  const confirm = await confirmTotpEnrollment(user.id, generateTotpCode(enrollment!.secret, now), meta);
+  if (!confirm.ok) throw new Error("enrollment failed");
+  return { user, secret: enrollment!.secret, setupStep: currentTotpStep(now), confirm };
 }
 
 describe.skipIf(!hasTestDatabase)("admin authentication flow", () => {
@@ -52,24 +52,48 @@ describe.skipIf(!hasTestDatabase)("admin authentication flow", () => {
     expect(attempts.map((a) => a.reason).sort()).toEqual(["unknown_email", "wrong_password"]);
   });
 
-  it("normalizes the e-mail and requires TOTP setup on first login", async () => {
+  it("logs in directly with a normalized e-mail when two factor is off", async () => {
     await createAdmin();
     const result = await loginWithPassword({ email: "  ADMIN@Example.test ", password: PASSWORD }, meta);
-    expect(result).toMatchObject({ ok: true, next: "setup" });
+    expect(result).toMatchObject({ ok: true, next: "done" });
     if (!result.ok) return;
-    const pending = await validateSessionToken(result.token, "admin");
-    expect(pending?.session.twoFactorVerified).toBe(false);
-    expect(pending!.session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(15 * 60_000);
+    const session = await validateSessionToken(result.token, "admin");
+    expect(session?.session.twoFactorVerified).toBe(true);
   });
 
-  it("enables TOTP, issues backup codes and rotates the session", async () => {
+  it("enables TOTP from the account and then requires the code at login", async () => {
     const { confirm, user } = await enrolledAdmin();
     if (!confirm.ok) return;
     expect(confirm.backupCodes).toHaveLength(10);
-    const full = await validateSessionToken(confirm.token, "admin");
-    expect(full?.session.twoFactorVerified).toBe(true);
-    const all = await getDb().select().from(sessions).where(eq(sessions.userId, user.id));
-    expect(all.filter((s) => !s.revokedAt)).toHaveLength(1);
+    const login = await loginWithPassword({ email: user.email, password: PASSWORD }, meta);
+    expect(login).toMatchObject({ ok: true, next: "verify" });
+    if (!login.ok) return;
+    const pending = await validateSessionToken(login.token, "admin");
+    expect(pending?.session.twoFactorVerified).toBe(false);
+    expect(pending!.session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(5 * 60_000);
+  });
+
+  it("disables TOTP only with the password and a valid code", async () => {
+    const { user, secret, setupStep } = await enrolledAdmin();
+    expect(await disableTotp(user.id, "Mauvais mot de passe", "000000", meta)).toMatchObject({ ok: false });
+    expect(await disableTotp(user.id, PASSWORD, "000000", meta)).toMatchObject({ ok: false });
+    const code = generateTotpCode(secret, (setupStep + 1) * 30_000 + 1_000);
+    expect(await disableTotp(user.id, PASSWORD, code, meta)).toEqual({ ok: true });
+    const login = await loginWithPassword({ email: user.email, password: PASSWORD }, meta);
+    expect(login).toMatchObject({ ok: true, next: "done" });
+  });
+
+  it("changes the password and closes the other sessions", async () => {
+    const user = await createAdmin();
+    const current = await createSession({ userId: user.id, kind: "admin", twoFactorVerified: true });
+    const other = await createSession({ userId: user.id, kind: "admin", twoFactorVerified: true });
+    const input = { current: PASSWORD, next: "Nouvelle phrase secrète 2027", confirmation: "Nouvelle phrase secrète 2027", code: "" };
+    expect(await changePassword(user.id, current.session.id, { ...input, confirmation: "autre" }, meta)).toMatchObject({ ok: false });
+    expect(await changePassword(user.id, current.session.id, input, meta)).toEqual({ ok: true });
+    expect(await validateSessionToken(current.token, "admin")).not.toBeNull();
+    expect(await validateSessionToken(other.token, "admin")).toBeNull();
+    const [updated] = await getDb().select().from(users).where(eq(users.id, user.id));
+    expect(await verifyPassword(updated.passwordHash!, input.next)).toBe(true);
   });
 
   it("verifies TOTP at login and refuses a replayed code", async () => {
@@ -94,7 +118,7 @@ describe.skipIf(!hasTestDatabase)("admin authentication flow", () => {
   it("accepts a backup code exactly once", async () => {
     const { user, confirm } = await enrolledAdmin();
     if (!confirm.ok) return;
-    const backup = confirm.backupCodes[3];
+    const backup = confirm.backupCodes![3];
     const a = await loginWithPassword({ email: user.email, password: PASSWORD }, meta);
     if (!a.ok) return;
     expect(await verifySecondFactor(a.token, backup.toLowerCase(), meta)).toMatchObject({

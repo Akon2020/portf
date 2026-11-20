@@ -33,7 +33,7 @@ export async function requestPasswordReset(rawEmail: string, meta: RequestMeta):
   if (!user || !(ADMIN_ROLES as readonly string[]).includes(user.role)) return;
 
   const token = await issueAuthToken({ type: "password_reset", email, userId: user.id, requestIp: meta.ip });
-  const url = new URL(`/admin/reinitialiser?jeton=${token}`, getSiteUrl()).toString();
+  const url = new URL(`/auth/reinitialiser?jeton=${token}`, getSiteUrl()).toString();
   await sendMail({
     to: email,
     subject: "Réinitialisation du mot de passe",

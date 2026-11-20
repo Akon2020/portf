@@ -4,9 +4,6 @@ import { routing } from "@/i18n/routing";
 import { buildCsp, isPrivatePath } from "@/lib/security-headers";
 import { SESSION_COOKIES } from "@/server/auth/cookie-names";
 
-/** Admin pages reachable without a session cookie. */
-const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/mot-de-passe-oublie", "/admin/reinitialiser", "/admin/securite"];
-
 const dev = process.env.NODE_ENV === "development";
 const intl = createIntlMiddleware(routing);
 
@@ -15,13 +12,9 @@ export function proxy(request: NextRequest) {
   const isPrivate = isPrivatePath(pathname);
 
   // Lightweight check only: every protected page validates the session in the database.
-  if (
-    pathname.startsWith("/admin") &&
-    !ADMIN_PUBLIC_PATHS.some((path) => pathname.startsWith(path)) &&
-    !request.cookies.has(SESSION_COOKIES.admin)
-  ) {
+  if (pathname.startsWith("/admin") && !request.cookies.has(SESSION_COOKIES.admin)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/admin/login";
+    url.pathname = "/auth/login";
     url.search = pathname === "/admin" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);
   }

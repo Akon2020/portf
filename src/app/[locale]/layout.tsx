@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
-import { THEME_SCRIPT } from "@/components/public/theme";
+import { THEME_SCRIPT } from "@/lib/theme-script";
 import { routing } from "@/i18n/routing";
 import { fontVariables } from "@/lib/fonts";
 import { tr } from "@/lib/localized";

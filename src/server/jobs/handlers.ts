@@ -75,7 +75,7 @@ export function registerJobHandlers(): void {
     const user = await userEmail(payload.userId);
     if (!user) return;
     const token = await issueAuthToken({ type: "session_revoke", email: user.email, userId: user.id });
-    const url = new URL(`/admin/securite/revoquer?jeton=${token}`, getSiteUrl()).toString();
+    const url = new URL(`/auth/revoquer?jeton=${token}`, getSiteUrl()).toString();
     await sendMail({
       to: user.email,
       subject: "Nouvelle connexion à l'administration",

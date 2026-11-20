@@ -4,11 +4,9 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-type ThemeChoice = "light" | "dark" | "system";
-const STORAGE_KEY = "theme";
+import { THEME_STORAGE_KEY as STORAGE_KEY } from "@/lib/theme-script";
 
-/** Applied before first paint to avoid a flash of the wrong theme. */
-export const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("${STORAGE_KEY}");var d=t==="dark"||((!t||t==="system")&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
+type ThemeChoice = "light" | "dark" | "system";
 
 function apply(choice: ThemeChoice) {
   const dark = choice === "dark" || (choice === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
