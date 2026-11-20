@@ -60,20 +60,32 @@ export const cvSettingsSchema = z.object({
   enMediaId: z.string().uuid().nullable().default(null),
 });
 
+export const templatesSettingsSchema = z.object({
+  replies: z
+    .array(z.object({ title: z.string().trim().min(1).max(80), body: z.string().trim().min(1).max(5000) }))
+    .max(30)
+    .default([]),
+  whatsappQuote: z.string().trim().max(1000).default(""),
+});
+
 export type ProfileSettings = z.infer<typeof profileSettingsSchema>;
 export type ContactSettings = z.infer<typeof contactSettingsSchema>;
 export type LegalSettings = z.infer<typeof legalSettingsSchema>;
 export type CvSettings = z.infer<typeof cvSettingsSchema>;
+export type TemplatesSettings = z.infer<typeof templatesSettingsSchema>;
 
 export const SETTINGS_SCHEMAS = {
   profile: profileSettingsSchema,
   contact: contactSettingsSchema,
   legal: legalSettingsSchema,
   cv: cvSettingsSchema,
+  templates: templatesSettingsSchema,
 } as const;
 
 export type SettingsKey = keyof typeof SETTINGS_SCHEMAS;
 export type SettingsValue<K extends SettingsKey> = z.infer<(typeof SETTINGS_SCHEMAS)[K]>;
+
+const PARAGRAPH = String.fromCharCode(10, 10);
 
 export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
   profile: {
@@ -125,4 +137,26 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
   },
   legal: { legalNotice: { fr: "", en: "" }, privacyPolicy: { fr: "", en: "" } },
   cv: { frMediaId: null, enMediaId: null },
+  templates: {
+    replies: [
+      {
+        title: "Premier échange",
+        body: [
+          "Bonjour,",
+          "Merci pour votre message et pour l'intérêt porté à mon travail. Pour bien comprendre votre besoin, pourriez-vous préciser vos objectifs, vos délais et votre budget indicatif ?",
+          "Je vous propose aussi un court appel pour en discuter.",
+        ].join(PARAGRAPH),
+      },
+      {
+        title: "First contact (EN)",
+        body: [
+          "Hello,",
+          "Thank you for your message. To understand your needs, could you share your goals, timeline and indicative budget?",
+          "I would also be happy to schedule a short call.",
+        ].join(PARAGRAPH),
+      },
+    ],
+    whatsappQuote:
+      "Bonjour {client}, voici votre devis {numero} d'un montant de {total}, valable jusqu'au {validite}. Vous pouvez le consulter et l'accepter ici : {lien}. Merci, Isaac Akonkwa.",
+  },
 };

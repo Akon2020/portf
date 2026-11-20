@@ -153,11 +153,14 @@ function cleanDeep(value: unknown): unknown {
   return value;
 }
 
-const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = { profile: ["available"], contact: [], legal: [], cv: [] };
+const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = { profile: ["available"], contact: [], legal: [], cv: [], templates: [] };
 
 export async function saveSettingsAction(key: SettingsKey, _state: FormState, formData: FormData): Promise<FormState> {
   const actor = await currentActor();
   const raw = parseFormData(formData, { booleans: SETTINGS_BOOLEANS[key] });
+  if (key === "templates" && Array.isArray(raw.replies)) {
+    raw.replies = (raw.replies as { title?: string; body?: string }[]).filter((item) => item?.title?.trim() && item?.body?.trim());
+  }
   if (key === "profile" && Array.isArray(raw.values)) {
     raw.values = (raw.values as { title?: { fr?: string } }[]).filter((value) => value?.title?.fr?.trim());
   }

@@ -4,9 +4,12 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/server/actions/auth";
 import { requireAdmin } from "@/server/auth/guards";
+import { unreadCount } from "@/server/services/inbox";
+import { newQuoteRequestCount } from "@/server/services/quote-requests";
 
 export default async function AdminAppLayout({ children }: { children: React.ReactNode }) {
   const { user } = await requireAdmin();
+  const [unread, newRequests] = await Promise.all([unreadCount(), newQuoteRequestCount()]);
 
   return (
     <div className="lg:grid lg:min-h-screen lg:grid-cols-[260px_1fr]">
@@ -27,7 +30,7 @@ export default async function AdminAppLayout({ children }: { children: React.Rea
             </span>
           </Link>
         </div>
-        <AdminNav />
+        <AdminNav badges={{ "/admin/messagerie": unread, "/admin/devis": newRequests }} />
       </aside>
       <div className="min-w-0">
         <header className="flex items-center justify-between gap-4 border-b px-4 py-3 sm:px-8">

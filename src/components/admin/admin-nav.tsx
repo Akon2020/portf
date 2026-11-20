@@ -24,8 +24,8 @@ export const ADMIN_NAV = [
   { href: "/admin/contenu", label: "Contenu", icon: FolderKanban, ready: true },
   { href: "/admin/blog", label: "Blog", icon: Newspaper, ready: false },
   { href: "/admin/galerie", label: "Galerie", icon: Images, ready: false },
-  { href: "/admin/messagerie", label: "Messagerie", icon: Inbox, ready: false },
-  { href: "/admin/devis", label: "Devis", icon: FileText, ready: false },
+  { href: "/admin/messagerie", label: "Messagerie", icon: Inbox, ready: true },
+  { href: "/admin/devis", label: "Devis", icon: FileText, ready: true },
   { href: "/admin/clients", label: "Clients", icon: Users, ready: false },
   { href: "/admin/taches", label: "Tâches et agenda", icon: CalendarCheck, ready: false },
   { href: "/admin/facturation", label: "Facturation", icon: Receipt, ready: false },
@@ -33,7 +33,7 @@ export const ADMIN_NAV = [
   { href: "/admin/parametres", label: "Paramètres", icon: Settings, ready: false },
 ] as const;
 
-export function AdminNav() {
+export function AdminNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Navigation de l'administration" className="flex gap-1 overflow-x-auto lg:flex-col">
@@ -55,7 +55,13 @@ export function AdminNav() {
         return (
           <Link key={href} href={href} className={className} aria-current={active ? "page" : undefined}>
             <Icon className="size-4" aria-hidden="true" />
-            {label}
+            <span className="flex-1">{label}</span>
+            {badges[href] ? (
+              <span className="rounded-full bg-info px-1.5 font-mono text-[10px] text-white">
+                {badges[href]}
+                <span className="sr-only"> à traiter</span>
+              </span>
+            ) : null}
           </Link>
         );
       })}
