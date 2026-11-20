@@ -1,7 +1,22 @@
-# Environment variables
-.env*.local
-
-# Common ignores
+# Dependencies
 node_modules
+
+# Build output
 .next/
+dist/
+out/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
+# Environment variables (only the example file is versioned)
+.env*
+!.env.example
+
+# Local data
+portfolio_data/
+
+# OS
 .DS_Store
+Thumbs.db
