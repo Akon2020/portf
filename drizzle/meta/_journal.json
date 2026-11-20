@@ -15,6 +15,13 @@
       "when": 1795192026066,
       "tag": "0001_content",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795195039457,
+      "tag": "0002_crm",
+      "breakpoints": true
     }
   ]
 }
