@@ -60,6 +60,22 @@ export const cvSettingsSchema = z.object({
   enMediaId: z.string().uuid().nullable().default(null),
 });
 
+/** Issuer printed on quotes, invoices and receipts. */
+export const issuerSettingsSchema = z.object({
+  name: z.string().trim().min(1, "Obligatoire").max(120),
+  businessName: z.string().trim().max(120).default(""),
+  address: z.string().trim().max(400).default(""),
+  phone: z.string().trim().max(40).default(""),
+  email: z.string().trim().max(254).default(""),
+  website: z.string().trim().max(200).default(""),
+  legalIds: z.string().trim().max(400).default(""),
+  paymentDetails: z.string().trim().max(1500).default(""),
+  footer: z.string().trim().max(600).default(""),
+  quoteValidityDays: z.coerce.number().int().min(1).max(365).default(30),
+  quoteTerms: z.string().trim().max(3000).default(""),
+  exchangeRate: z.string().trim().max(20).default(""),
+});
+
 export const templatesSettingsSchema = z.object({
   replies: z
     .array(z.object({ title: z.string().trim().min(1).max(80), body: z.string().trim().min(1).max(5000) }))
@@ -73,6 +89,7 @@ export type ContactSettings = z.infer<typeof contactSettingsSchema>;
 export type LegalSettings = z.infer<typeof legalSettingsSchema>;
 export type CvSettings = z.infer<typeof cvSettingsSchema>;
 export type TemplatesSettings = z.infer<typeof templatesSettingsSchema>;
+export type IssuerSettings = z.infer<typeof issuerSettingsSchema>;
 
 export const SETTINGS_SCHEMAS = {
   profile: profileSettingsSchema,
@@ -80,6 +97,7 @@ export const SETTINGS_SCHEMAS = {
   legal: legalSettingsSchema,
   cv: cvSettingsSchema,
   templates: templatesSettingsSchema,
+  issuer: issuerSettingsSchema,
 } as const;
 
 export type SettingsKey = keyof typeof SETTINGS_SCHEMAS;
@@ -137,6 +155,20 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
   },
   legal: { legalNotice: { fr: "", en: "" }, privacyPolicy: { fr: "", en: "" } },
   cv: { frMediaId: null, enMediaId: null },
+  issuer: {
+    name: "Isaac Akonkwa",
+    businessName: "Akon Tech",
+    address: "Bukavu, Sud-Kivu, République démocratique du Congo",
+    phone: "",
+    email: "akonkwaushindi@gmail.com",
+    website: "",
+    legalIds: "",
+    paymentDetails: "",
+    footer: "",
+    quoteValidityDays: 30,
+    quoteTerms: "",
+    exchangeRate: "",
+  },
   templates: {
     replies: [
       {
