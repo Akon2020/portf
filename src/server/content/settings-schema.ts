@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 export const localizedSchema = z.object({
   fr: z.string().trim().max(20_000),

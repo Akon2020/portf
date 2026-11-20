@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { cleanTypography } from "@/lib/typography";
 import { PROJECT_CATEGORIES } from "../db/schema/content";
 
@@ -95,7 +95,7 @@ export const projectSchema = z.object({
 
 export const journeySchema = z.object({
   type: z.enum(["experience", "education", "community", "speaking", "award"]),
-  organization: z.string().trim().min(1).max(200),
+  organization: z.string().trim().min(1, "Obligatoire").max(200),
   title: localized({ required: true, max: 200 }),
   description: localized({ max: 4000 }),
   location: z.string().trim().max(120).transform((value) => value || null),
@@ -110,7 +110,7 @@ export const journeySchema = z.object({
 });
 
 export const skillSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1, "Obligatoire").max(80),
   group: z.enum(["frontend", "backend", "mobile", "database", "cloud", "ai", "security", "tools"]),
   level: z.enum(["advanced", "confirmed", "intermediate"]),
   iconSlug: z.string().trim().max(60).transform((value) => value || null),
@@ -136,7 +136,7 @@ export const serviceSchema = z.object({
 });
 
 export const testimonialSchema = z.object({
-  authorName: z.string().trim().min(1).max(160),
+  authorName: z.string().trim().min(1, "Obligatoire").max(160),
   authorRole: localized({ max: 160 }),
   authorCompany: z.string().trim().max(160).transform((value) => value || null),
   authorPhotoId: uuidOrNull,
@@ -151,7 +151,7 @@ export const testimonialSchema = z.object({
 
 export const statSchema = z.object({
   label: localized({ required: true, max: 120 }),
-  value: z.string().trim().min(1).max(20),
+  value: z.string().trim().min(1, "Obligatoire").max(20),
   suffix: z.string().trim().max(10).transform((value) => value || null),
   sortOrder: order,
   isVisible: z.boolean().default(true),
@@ -171,7 +171,7 @@ export const socialLinkSchema = z.object({
     "tiktok",
     "other",
   ]),
-  label: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1, "Obligatoire").max(80),
   url: z
     .string()
     .trim()

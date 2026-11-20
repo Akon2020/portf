@@ -10,6 +10,7 @@ import {
   Images,
   Inbox,
   LayoutDashboard,
+  ListChecks,
   Newspaper,
   Receipt,
   Settings,
@@ -19,7 +20,8 @@ import { cn } from "@/lib/utils";
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard, ready: true },
-  { href: "/admin/contenu", label: "Contenu", icon: FolderKanban, ready: false },
+  { href: "/admin/a-valider", label: "À valider", icon: ListChecks, ready: true },
+  { href: "/admin/contenu", label: "Contenu", icon: FolderKanban, ready: true },
   { href: "/admin/blog", label: "Blog", icon: Newspaper, ready: false },
   { href: "/admin/galerie", label: "Galerie", icon: Images, ready: false },
   { href: "/admin/messagerie", label: "Messagerie", icon: Inbox, ready: false },
