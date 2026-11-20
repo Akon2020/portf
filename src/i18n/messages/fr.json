@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "description": "Isaac Akonkwa, ingénieur logiciel full-stack, builder et mentor basé à Bukavu (RDC). Développement web et mobile, intégration IA et sécurité.",
+    "ogLocale": "fr_FR"
+  },
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "projects": "Projets",
+    "services": "Services",
+    "contact": "Contact",
+    "menu": "Ouvrir le menu",
+    "close": "Fermer le menu",
+    "skip": "Aller au contenu",
+    "main": "Navigation principale"
+  },
+  "theme": {
+    "toggle": "Changer de thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
+  "locale": {
+    "label": "Langue",
+    "fr": "Français",
+    "en": "English",
+    "switchTo": "Read in English"
+  },
+  "hero": {
+    "ctaPrimary": "Parlons de votre projet",
+    "ctaSecondary": "Voir mes projets",
+    "basedIn": "Basé à",
+    "since": "Depuis",
+    "portraitAlt": "Portrait d’Isaac Akonkwa"
+  },
+  "sections": {
+    "profile": "Profil",
+    "expertise": "Expertise et services",
+    "projects": "Projets à la une",
+    "journey": "Parcours",
+    "stack": "Stack technique",
+    "testimonials": "Témoignages",
+    "contact": "Contact"
+  },
+  "home": {
+    "trustLabel": "Organisations et communautés",
+    "profileMore": "En savoir plus",
+    "expertiseTitle": "Construire avec méthode, livrer avec intention.",
+    "serviceCta": "Discuter de ce service",
+    "allServices": "Tous les services",
+    "projectsTitle": "Des produits pensés pour de vrais usages.",
+    "allProjects": "Tous les projets",
+    "journeyTitle": "Une trajectoire guidée par l’apprentissage et l’impact.",
+    "stackTitle": "Des outils choisis pour résoudre les bons problèmes, pas pour remplir une liste.",
+    "testimonialsTitle": "Ce qu’en disent celles et ceux qui ont travaillé avec moi.",
+    "otherNeed": "Un besoin différent ? Parlons-en."
+  },
+  "journey": {
+    "filterLabel": "Filtrer le parcours",
+    "all": "Tout",
+    "experience": "Expérience",
+    "education": "Formation",
+    "community": "Communauté",
+    "speaking": "Interventions",
+    "award": "Distinctions"
+  },
+  "skills": {
+    "levels": {
+      "advanced": "Avancé",
+      "confirmed": "Confirmé",
+      "intermediate": "Intermédiaire"
+    },
+    "groups": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "mobile": "Mobile",
+      "database": "Bases de données et ORM",
+      "cloud": "Cloud et infrastructure",
+      "ai": "IA et Python",
+      "security": "Sécurité",
+      "tools": "Outils"
+    }
+  },
+  "project": {
+    "view": "Voir l’étude de cas",
+    "back": "Tous les projets",
+    "context": "Contexte",
+    "problem": "Problème",
+    "objective": "Objectif",
+    "role": "Mon rôle",
+    "results": "Résultats",
+    "stack": "Stack",
+    "gallery": "Galerie",
+    "demo": "Voir la démo",
+    "code": "Voir le code",
+    "previous": "Projet précédent",
+    "next": "Projet suivant",
+    "ctaTitle": "Un projet similaire en tête ?",
+    "ctaText": "Parlons de votre contexte, de vos contraintes et de vos délais.",
+    "confidential": "Projet client confidentiel",
+    "period": "Période",
+    "type": "Type",
+    "stageLabel": "Statut",
+    "testimonial": "Témoignage",
+    "imageOf": "Image {current} sur {total}",
+    "closeLightbox": "Fermer",
+    "nextImage": "Image suivante",
+    "previousImage": "Image précédente",
+    "stage": {
+      "concept": "Concept",
+      "in_progress": "En cours",
+      "completed": "Terminé",
+      "maintained": "Maintenu"
+    },
+    "projectType": {
+      "personal": "Projet personnel",
+      "client": "Projet client",
+      "team": "Projet d’équipe",
+      "academic": "Projet académique"
+    },
+    "categories": {
+      "web": "Web",
+      "mobile": "Mobile",
+      "ai": "IA",
+      "security": "Sécurité",
+      "saas": "SaaS",
+      "backend": "Backend",
+      "health": "Santé",
+      "education": "Éducation",
+      "management": "Gestion",
+      "devtools": "Outils dev"
+    }
+  },
+  "projects": {
+    "title": "Projets",
+    "intro": "Études de cas de produits web, mobiles et IA, du concept à la mise en production.",
+    "filterLabel": "Filtrer par catégorie",
+    "all": "Tous",
+    "search": "Rechercher un projet",
+    "empty": "Aucun projet ne correspond à votre recherche.",
+    "count": "{count, plural, =0 {Aucun projet} one {# projet} other {# projets}}"
+  },
+  "services": {
+    "title": "Services",
+    "intro": "Du cadrage à la mise en ligne, j’accompagne les équipes et les porteurs de projet sur le web, le mobile, l’IA et la sécurité.",
+    "from": "À partir de",
+    "deliverables": "Livrables",
+    "cta": "Discuter de ce service",
+    "processTitle": "Comment nous travaillons ensemble",
+    "process": {
+      "1": {
+        "title": "Échange",
+        "text": "Nous clarifions vos objectifs, vos utilisateurs et vos contraintes."
+      },
+      "2": {
+        "title": "Proposition",
+        "text": "Vous recevez une proposition détaillée : périmètre, étapes, délais et budget."
+      },
+      "3": {
+        "title": "Réalisation",
+        "text": "Le développement avance par étapes courtes, avec des démonstrations régulières."
+      },
+      "4": {
+        "title": "Livraison et suivi",
+        "text": "Mise en ligne, documentation, puis accompagnement selon vos besoins."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Un projet, une collaboration, un poste ou une question : écrivez-moi.",
+    "email": "E-mail",
+    "whatsapp": "WhatsApp",
+    "calendly": "Prendre rendez-vous",
+    "socials": "Réseaux",
+    "formSoon": "Le formulaire de contact arrive très bientôt. En attendant, écrivez-moi directement par e-mail ou sur WhatsApp.",
+    "writeMe": "M’écrire",
+    "whatsappMessage": "Bonjour Isaac, je vous contacte depuis votre site."
+  },
+  "about": {
+    "title": "À propos",
+    "values": "Valeurs",
+    "journey": "Parcours complet",
+    "skills": "Compétences",
+    "cv": "Télécharger le CV",
+    "location": "Localisation"
+  },
+  "legal": {
+    "legalTitle": "Mentions légales",
+    "privacyTitle": "Politique de confidentialité",
+    "updated": "Dernière mise à jour"
+  },
+  "footer": {
+    "quickLinks": "Liens rapides",
+    "follow": "Réseaux",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité",
+    "rights": "Tous droits réservés."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "text": "Cette page n’existe pas ou a été déplacée.",
+    "back": "Retour à l’accueil"
+  },
+  "error": {
+    "title": "Une erreur est survenue",
+    "text": "Le problème a été enregistré. Réessayez dans un instant.",
+    "retry": "Réessayer"
+  }
+}

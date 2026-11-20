@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import { baseSecurityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
@@ -6,7 +7,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   // Native modules loaded at runtime instead of being bundled.
-  serverExternalPackages: ["@node-rs/argon2"],
+  serverExternalPackages: ["@node-rs/argon2", "sharp"],
   images: {
     // Kept until sharp is confirmed to load on the shared hosting.
     unoptimized: true,
@@ -21,4 +22,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

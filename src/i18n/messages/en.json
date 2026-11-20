@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "description": "Isaac Akonkwa, full-stack software engineer, builder and mentor based in Bukavu (DRC). Web and mobile development, AI integration and security.",
+    "ogLocale": "en_US"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "projects": "Projects",
+    "services": "Services",
+    "contact": "Contact",
+    "menu": "Open menu",
+    "close": "Close menu",
+    "skip": "Skip to content",
+    "main": "Main navigation"
+  },
+  "theme": {
+    "toggle": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English",
+    "switchTo": "Lire en français"
+  },
+  "hero": {
+    "ctaPrimary": "Let’s talk about your project",
+    "ctaSecondary": "See my projects",
+    "basedIn": "Based in",
+    "since": "Since",
+    "portraitAlt": "Portrait of Isaac Akonkwa"
+  },
+  "sections": {
+    "profile": "Profile",
+    "expertise": "Expertise and services",
+    "projects": "Featured projects",
+    "journey": "Journey",
+    "stack": "Tech stack",
+    "testimonials": "Testimonials",
+    "contact": "Contact"
+  },
+  "home": {
+    "trustLabel": "Organizations and communities",
+    "profileMore": "Learn more",
+    "expertiseTitle": "Build with method, ship with intention.",
+    "serviceCta": "Discuss this service",
+    "allServices": "All services",
+    "projectsTitle": "Products built for real use.",
+    "allProjects": "All projects",
+    "journeyTitle": "A path shaped by learning and impact.",
+    "stackTitle": "Tools chosen to solve the right problems, not to fill a list.",
+    "testimonialsTitle": "What people who worked with me say.",
+    "otherNeed": "Something different in mind? Let’s talk."
+  },
+  "journey": {
+    "filterLabel": "Filter the journey",
+    "all": "All",
+    "experience": "Experience",
+    "education": "Education",
+    "community": "Community",
+    "speaking": "Talks",
+    "award": "Awards"
+  },
+  "skills": {
+    "levels": {
+      "advanced": "Advanced",
+      "confirmed": "Proficient",
+      "intermediate": "Intermediate"
+    },
+    "groups": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "mobile": "Mobile",
+      "database": "Databases and ORM",
+      "cloud": "Cloud and infrastructure",
+      "ai": "AI and Python",
+      "security": "Security",
+      "tools": "Tools"
+    }
+  },
+  "project": {
+    "view": "Read the case study",
+    "back": "All projects",
+    "context": "Context",
+    "problem": "Problem",
+    "objective": "Objective",
+    "role": "My role",
+    "results": "Results",
+    "stack": "Stack",
+    "gallery": "Gallery",
+    "demo": "Live demo",
+    "code": "Source code",
+    "previous": "Previous project",
+    "next": "Next project",
+    "ctaTitle": "Have a similar project in mind?",
+    "ctaText": "Let’s talk about your context, constraints and timeline.",
+    "confidential": "Confidential client project",
+    "period": "Period",
+    "type": "Type",
+    "stageLabel": "Status",
+    "testimonial": "Testimonial",
+    "imageOf": "Image {current} of {total}",
+    "closeLightbox": "Close",
+    "nextImage": "Next image",
+    "previousImage": "Previous image",
+    "stage": {
+      "concept": "Concept",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "maintained": "Maintained"
+    },
+    "projectType": {
+      "personal": "Personal project",
+      "client": "Client project",
+      "team": "Team project",
+      "academic": "Academic project"
+    },
+    "categories": {
+      "web": "Web",
+      "mobile": "Mobile",
+      "ai": "AI",
+      "security": "Security",
+      "saas": "SaaS",
+      "backend": "Backend",
+      "health": "Health",
+      "education": "Education",
+      "management": "Management",
+      "devtools": "Dev tools"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "intro": "Case studies of web, mobile and AI products, from concept to production.",
+    "filterLabel": "Filter by category",
+    "all": "All",
+    "search": "Search a project",
+    "empty": "No project matches your search.",
+    "count": "{count, plural, =0 {No project} one {# project} other {# projects}}"
+  },
+  "services": {
+    "title": "Services",
+    "intro": "From scoping to launch, I help teams and founders on the web, mobile, AI and security.",
+    "from": "From",
+    "deliverables": "Deliverables",
+    "cta": "Discuss this service",
+    "processTitle": "How we work together",
+    "process": {
+      "1": {
+        "title": "Discovery",
+        "text": "We clarify your goals, your users and your constraints."
+      },
+      "2": {
+        "title": "Proposal",
+        "text": "You receive a detailed proposal: scope, milestones, timeline and budget."
+      },
+      "3": {
+        "title": "Delivery",
+        "text": "Development moves forward in short iterations, with regular demos."
+      },
+      "4": {
+        "title": "Launch and support",
+        "text": "Go live, documentation, then ongoing support as needed."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "A project, a collaboration, a role or a question: get in touch.",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "calendly": "Book a call",
+    "socials": "Social",
+    "formSoon": "The contact form is coming very soon. In the meantime, write to me directly by email or on WhatsApp.",
+    "writeMe": "Write to me",
+    "whatsappMessage": "Hello Isaac, I am reaching out from your website."
+  },
+  "about": {
+    "title": "About",
+    "values": "Values",
+    "journey": "Full journey",
+    "skills": "Skills",
+    "cv": "Download the resume",
+    "location": "Location"
+  },
+  "legal": {
+    "legalTitle": "Legal notice",
+    "privacyTitle": "Privacy policy",
+    "updated": "Last updated"
+  },
+  "footer": {
+    "quickLinks": "Quick links",
+    "follow": "Social",
+    "legal": "Legal notice",
+    "privacy": "Privacy",
+    "rights": "All rights reserved."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This page does not exist or has moved.",
+    "back": "Back to home"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "text": "The issue has been logged. Please try again in a moment.",
+    "retry": "Try again"
+  }
+}

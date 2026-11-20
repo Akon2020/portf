@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { fontVariables } from "@/lib/fonts";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Administration", template: "%s | Administration" },
@@ -6,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return <div className="admin-root min-h-screen bg-background font-sans text-foreground">{children}</div>;
+  return (
+    <html lang="fr" className={fontVariables}>
+      <body className="admin-root min-h-screen bg-background font-sans text-foreground antialiased">{children}</body>
+    </html>
+  );
 }
