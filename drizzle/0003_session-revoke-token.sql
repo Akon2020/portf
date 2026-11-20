@@ -1,0 +1,1 @@
+ALTER TYPE "public"."auth_token_type" ADD VALUE 'session_revoke';

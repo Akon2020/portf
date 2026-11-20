@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
+import { verifySmtp } from "../mail/transport";
 
 interface Check {
   name: string;
@@ -54,8 +55,8 @@ const checks: Check[] = [
     name: "SMTP",
     critical: false,
     run: async () => {
-      if (!process.env.SMTP_HOST) throw new Error("non configuré (SMTP_HOST vide)");
-      return `${process.env.SMTP_HOST}:${process.env.SMTP_PORT ?? 465} (test d'envoi disponible avec le module e-mail)`;
+      if (!process.env.SMTP_HOST) throw new Error("non configuré : les e-mails sont écrits dans la boîte locale");
+      return verifySmtp();
     },
   },
 ];

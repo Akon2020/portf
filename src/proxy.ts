@@ -5,7 +5,7 @@ import { buildCsp, isPrivatePath } from "@/lib/security-headers";
 import { SESSION_COOKIES } from "@/server/auth/cookie-names";
 
 /** Admin pages reachable without a session cookie. */
-const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/mot-de-passe-oublie", "/admin/reinitialiser"];
+const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/mot-de-passe-oublie", "/admin/reinitialiser", "/admin/securite"];
 
 const dev = process.env.NODE_ENV === "development";
 const intl = createIntlMiddleware(routing);

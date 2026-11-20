@@ -9,9 +9,11 @@ import { authTokens, cronRuns, sessions } from "../src/server/db/schema";
 import { purgeExpiredRateLimits } from "../src/server/auth/rate-limit";
 import { createAdmin } from "../src/server/cli/create-admin";
 import { healthcheck } from "../src/server/cli/healthcheck";
+import { registerJobHandlers } from "../src/server/jobs/handlers";
 import { runDueJobs } from "../src/server/jobs/runner";
 
 loadEnvConfig(process.cwd());
+registerJobHandlers();
 
 type Task = (args: string[]) => Promise<{ code?: number; processed?: number }>;
 
