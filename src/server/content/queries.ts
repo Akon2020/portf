@@ -7,7 +7,6 @@ import {
   projectImages,
   projects,
   services,
-  settings,
   skills,
   socialLinks,
   stats,
@@ -31,6 +30,8 @@ export const TAGS = {
   socials: "content:socials",
   stats: "content:stats",
   media: "content:media",
+  posts: "content:posts",
+  gallery: "content:gallery",
 } as const;
 
 const ONE_DAY = 86_400;

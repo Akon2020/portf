@@ -9,6 +9,8 @@ export interface LibraryItem {
   id: string;
   url: string;
   thumb: string;
+  /** Largest web variant, used when inserting an image in an article. */
+  large?: string;
   mime: string;
   alt: { fr: string; en?: string };
   needsReplacement: boolean;
