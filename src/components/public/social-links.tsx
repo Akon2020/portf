@@ -31,7 +31,6 @@ export function SocialLinks({ links, className, size = "md" }: { links: SocialLi
           <li key={link.id}>
             <a
               href={link.url}
-              aria-label={link.label}
               title={link.label}
               {...(external ? { target: "_blank", rel: "noopener noreferrer me" } : {})}
               className={cn(
@@ -39,7 +38,8 @@ export function SocialLinks({ links, className, size = "md" }: { links: SocialLi
                 size === "sm" ? "size-8" : "size-10",
               )}
             >
-              <span aria-hidden="true">{MONOGRAMS[link.platform] ?? MONOGRAMS.other}</span>
+              {MONOGRAMS[link.platform] ?? MONOGRAMS.other}
+              <span className="sr-only"> ({link.label})</span>
             </a>
           </li>
         );

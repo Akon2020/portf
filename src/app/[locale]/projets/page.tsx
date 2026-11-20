@@ -45,7 +45,7 @@ export default async function ProjectsPage({ params }: { params: Promise<{ local
             }))}
           >
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} locale={locale} />
+              <ProjectCard key={project.id} project={project} locale={locale} headingLevel={2} />
             ))}
           </ProjectsExplorer>
         </div>

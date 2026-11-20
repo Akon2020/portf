@@ -32,10 +32,10 @@ function LocaleSwitch() {
         router.replace({ pathname, params } as never, { locale: target, scroll: false })
       }
       className="label-mono grid h-9 min-w-9 place-items-center rounded-full border px-2.5 text-foreground transition-colors hover:bg-surface"
-      aria-label={t("switchTo")}
       title={t("switchTo")}
     >
       {target.toUpperCase()}
+      <span className="sr-only"> ({t("switchTo")})</span>
     </button>
   );
 }

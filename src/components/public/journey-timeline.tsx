@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { formatPeriod, type AppLocale } from "@/lib/format";
@@ -22,7 +21,6 @@ export interface TimelineItem {
 export function JourneyTimeline({ items, showFilters = true }: { items: TimelineItem[]; showFilters?: boolean }) {
   const t = useTranslations("journey");
   const locale = useLocale() as AppLocale;
-  const reduceMotion = useReducedMotion();
   const types = (["experience", "education", "community", "speaking", "award"] as const).filter((type) =>
     items.some((item) => item.type === type),
   );
@@ -50,15 +48,8 @@ export function JourneyTimeline({ items, showFilters = true }: { items: Timeline
         </div>
       )}
       <ol className="relative border-l pl-0">
-        {visible.map((item, index) => (
-          <motion.li
-            key={item.id}
-            className="relative grid gap-2 pb-12 pl-8 last:pb-0 md:grid-cols-[180px_1fr] md:gap-8"
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.4, delay: Math.min(index, 4) * 0.05 }}
-          >
+        {visible.map((item) => (
+          <li key={item.id} className="reveal relative grid gap-2 pb-12 pl-8 last:pb-0 md:grid-cols-[180px_1fr] md:gap-8">
             <span
               aria-hidden="true"
               className="absolute -left-[5px] top-2 size-[9px] rounded-full bg-brand-orange ring-4 ring-[color-mix(in_srgb,var(--brand-orange)_18%,transparent)]"
@@ -78,7 +69,7 @@ export function JourneyTimeline({ items, showFilters = true }: { items: Timeline
               {tr(item.description, locale) && <p className="mt-2 max-w-2xl text-muted-foreground">{tr(item.description, locale)}</p>}
               {item.location && <p className="mt-2 text-sm text-muted-foreground">{item.location}</p>}
             </div>
-          </motion.li>
+          </li>
         ))}
       </ol>
     </div>

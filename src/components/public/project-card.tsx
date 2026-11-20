@@ -5,7 +5,18 @@ import { tr } from "@/lib/localized";
 import type { PublicProject } from "@/server/content/queries";
 import { MediaImage } from "./media-image";
 
-export async function ProjectCard({ project, locale, index }: { project: PublicProject; locale: string; index?: number }) {
+export async function ProjectCard({
+  project,
+  locale,
+  index,
+  headingLevel = 3,
+}: {
+  project: PublicProject;
+  locale: string;
+  index?: number;
+  headingLevel?: 2 | 3;
+}) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const t = await getTranslations("project");
   const metric = project.results[0];
   return (
@@ -33,11 +44,11 @@ export async function ProjectCard({ project, locale, index }: { project: PublicP
         <p className="label-mono text-accent">
           {project.categories.slice(0, 3).map((category) => t(`categories.${category}`)).join(" · ")}
         </p>
-        <h3 className="mt-2 text-(length:--text-h3) font-medium">
+        <Heading className="mt-2 text-(length:--text-h3) font-medium">
           <Link href={{ pathname: "/projets/[slug]", params: { slug: project.slug } }} className="after:absolute after:inset-0">
             {tr(project.title, locale)}
           </Link>
-        </h3>
+        </Heading>
         <p className="mt-2 line-clamp-3 text-muted-foreground">{tr(project.summary, locale)}</p>
         {metric && (
           <p className="mt-4 text-sm">
