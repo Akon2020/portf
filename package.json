@@ -18,7 +18,9 @@
     "build:cron": "node scripts/build-cron.mjs",
     "cron:dev": "tsx cron/index.ts",
     "create-admin": "tsx cron/index.ts create-admin",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "seed": "tsx scripts/seed.ts base",
+    "seed:content": "tsx scripts/seed.ts content"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
