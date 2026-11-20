@@ -2,7 +2,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import { createElement, type ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
-import { readSettingUncached } from "@/server/content/queries";
+import { readSettingUncached } from "@/server/content/settings-store";
 import type { Quote, QuoteItem } from "@/server/db/schema";
 import { publicQuoteUrl } from "@/server/services/quotes";
 import { QuoteDocument } from "./quote-document";

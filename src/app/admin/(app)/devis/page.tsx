@@ -25,11 +25,11 @@ export default async function QuoteRequestsPage() {
   return (
     <>
       <PageHeader title="Demandes de devis" description="Pipeline des demandes reçues depuis le formulaire public." />
-      <div className="grid gap-4 overflow-x-auto pb-2 lg:grid-cols-5">
+      <div className="grid grid-cols-[repeat(5,minmax(14rem,1fr))] gap-4 overflow-x-auto pb-2">
         {COLUMNS.map((status) => {
           const items = rows.filter((row) => row.request.status === status);
           return (
-            <section key={status} aria-labelledby={`col-${status}`} className="min-w-60 rounded-xl border bg-surface/40 p-3">
+            <section key={status} aria-labelledby={`col-${status}`} className="rounded-xl border bg-surface/40 p-3">
               <h2 id={`col-${status}`} className="mb-3 flex items-center justify-between font-sans text-sm font-semibold tracking-normal">
                 {REQUEST_LABELS.status[status]}
                 <span className="font-mono text-xs text-muted-foreground">{items.length}</span>

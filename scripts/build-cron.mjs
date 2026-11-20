@@ -10,7 +10,7 @@ await build({
   format: "cjs",
   sourcemap: true,
   // Native or optional modules resolved at runtime from node_modules.
-  external: ["@node-rs/argon2", "sharp"],
+  external: ["@node-rs/argon2", "sharp", "@react-pdf/renderer"],
   tsconfig: "tsconfig.json",
   logLevel: "info",
 });

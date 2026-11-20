@@ -8,7 +8,15 @@ import { acceptQuoteAction, declineQuoteAction } from "@/server/actions/document
 import { getRequestContext } from "@/server/request-context";
 import { getQuoteByToken, isExpired, markQuoteViewed } from "@/server/services/quotes";
 
-export const metadata: Metadata = { title: "Devis | Isaac Akonkwa", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const found = await getQuoteByToken(token);
+  const english = found?.quote.locale === "en";
+  return {
+    title: `${english ? "Quote" : "Devis"} ${found?.quote.number ?? ""} | Isaac Akonkwa`.replace("  ", " "),
+    robots: { index: false, follow: false },
+  };
+}
 
 const T = {
   fr: {

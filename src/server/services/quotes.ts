@@ -6,7 +6,7 @@ import { getSiteUrl } from "@/lib/site";
 import { whatsappLink } from "@/lib/whatsapp";
 import { z } from "@/lib/zod";
 import { generateToken } from "../auth/crypto";
-import { readSettingUncached } from "../content/queries";
+import { readSettingUncached } from "../content/settings-store";
 import { getDb } from "../db";
 import {
   clients,

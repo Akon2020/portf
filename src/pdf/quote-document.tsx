@@ -3,6 +3,8 @@ import { formatMoney, type Currency } from "@/lib/money";
 import type { IssuerSettings } from "@/server/content/settings-schema";
 import type { Quote, QuoteItem } from "@/server/db/schema";
 
+const NB = String.fromCharCode(0xa0);
+
 const COLORS = { ink: "#132238", muted: "#4F5B6B", line: "#E2DCD0", accent: "#A34B07", soft: "#F4F0E8" };
 
 const styles = StyleSheet.create({
@@ -12,7 +14,7 @@ const styles = StyleSheet.create({
   brand: { fontFamily: "Helvetica-Bold", fontSize: 14 },
   muted: { color: COLORS.muted },
   label: { fontSize: 7.5, letterSpacing: 1, color: COLORS.muted, textTransform: "uppercase", marginBottom: 3 },
-  docTitle: { fontFamily: "Helvetica-Bold", fontSize: 20, color: COLORS.accent, textAlign: "right" },
+  docTitle: { fontFamily: "Helvetica-Bold", fontSize: 20, color: COLORS.accent, textAlign: "right", marginBottom: 6 },
   box: { borderWidth: 1, borderColor: COLORS.line, borderRadius: 4, padding: 10 },
   th: { fontFamily: "Helvetica-Bold", fontSize: 8, color: COLORS.muted, paddingVertical: 6 },
   td: { paddingVertical: 7 },
@@ -90,7 +92,9 @@ function approximate(quote: Quote, locale: "fr" | "en"): string | null {
   if (!rate) return null;
   const other: Currency = quote.currency === "USD" ? "CDF" : "USD";
   const converted = quote.currency === "USD" ? Math.round(quote.total * rate) : Math.round(quote.total / rate);
-  const rateText = `1 USD = ${new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US").format(rate).replace(/\u{202F}/gu, " ")} CDF`;
+  const formattedRate = new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US").format(rate).replace(/[\u{202F} ]/gu, NB);
+  // Non-breaking spaces keep "1 USD = 2 800 CDF" on a single line.
+  const rateText = ["1", "USD", "=", formattedRate, "CDF"].join(NB);
   return `${LABELS[locale].approx(formatMoney(converted, other, locale))} ${rateText}`;
 }
 
@@ -113,6 +117,8 @@ export function QuoteDocument({
     );
   const money = (cents: number) => formatMoney(cents, quote.currency, locale);
   const approx = approximate(quote, locale);
+  // French typography: non-breaking space before the colon.
+  const colon = locale === "fr" ? `${NB}: ` : ": ";
 
   return (
     <Document title={`${L.doc} ${quote.number ?? ""}`} author={issuer.name} creator={issuer.name} language={locale}>
@@ -132,14 +138,20 @@ export function QuoteDocument({
             <View style={{ marginTop: 8, alignItems: "flex-end" }}>
               {quote.number ? (
                 <Text>
-                  {L.number} : <Text style={{ fontFamily: "Helvetica-Bold" }}>{quote.number}</Text>
+                  {L.number}
+                  {colon}
+                  <Text style={{ fontFamily: "Helvetica-Bold" }}>{quote.number}</Text>
                 </Text>
               ) : null}
               <Text>
-                {L.issued} : {date(quote.issueDate)}
+                {L.issued}
+                {colon}
+                {date(quote.issueDate)}
               </Text>
               <Text>
-                {L.valid} : {date(quote.validUntil)}
+                {L.valid}
+                {colon}
+                {date(quote.validUntil)}
               </Text>
             </View>
           </View>

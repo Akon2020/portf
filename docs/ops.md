@@ -128,7 +128,7 @@ cd /home/<utilisateur>/portfolio && $NODE dist/cron.js <tâche> >> /home/<utilis
 | Fréquence | Tâche | Rôle |
 |---|---|---|
 | `*/5 * * * *` | `run-jobs` | file de jobs (e-mails, alertes, rappels), 4 minutes maximum par passage |
-| `15 0 * * *` | `nightly` | purge des limites de débit, sessions et jetons expirés |
+| `15 0 * * *` | `nightly` | purge des limites de débit, sessions et jetons expirés, passage des devis échus en « expiré » |
 
 D'autres tâches arriveront avec les phases suivantes (`daily-digest`, `weekly`, sauvegarde). Chaque exécution de `run-jobs` et `nightly` est enregistrée dans la table `cron_runs`. Si l'hébergeur impose une fréquence plus faible, les rappels auront la précision correspondante.
 
