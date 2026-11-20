@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { formatPeriod } from "@/lib/format";
 import {
   ArrowDownRight,
   ArrowUpRight,
-  BriefcaseBusiness,
-  Check,
   Code2,
   ExternalLink,
   Globe2,
@@ -47,7 +46,7 @@ const copy = {
     timelineTitle: "Une trajectoire guidée par l’apprentissage et l’impact.",
     skills: "Stack technique",
     skillsText:
-      "Des outils choisis pour résoudre les bons problèmes — pas pour remplir une liste.",
+      "Des outils choisis pour résoudre les bons problèmes, pas pour remplir une liste.",
     contactTitle: "Une idée à faire grandir ?",
     contactText:
       "Échangeons sur votre produit, votre équipe ou votre prochaine étape.",
@@ -74,7 +73,7 @@ const copy = {
     timelineTitle: "A path shaped by learning and impact.",
     skills: "Technical stack",
     skillsText:
-      "Tools chosen to solve the right problems — not to fill a list.",
+      "Tools chosen to solve the right problems, not to fill a list.",
     contactTitle: "An idea worth growing?",
     contactText: "Let’s talk about your product, team or next chapter.",
     footer: "Software engineer & founder of Akon Tech.",
@@ -113,37 +112,48 @@ const projects = [
   },
 ];
 
-const timeline = [
-  [
-    "2025 - aujourd’hui",
-    "Nyumbani Express",
-    "CTO & Software Developer",
-    "Développement d’un ERP FullStack de travail immobilier, Mobile App et optimisation des performances.",
-  ],
-  [
-    "2023 - aujourd’hui",
-    "Code, Growth Alive",
-    "Web Developer & Chargé de marketing",
-    "Développement d’applications web professionnelles, APIs sécurisées et optimisation des performances.",
-  ],
-  [
-    "2022 - 2024",
-    "Google Developer Student Club",
-    "Lead Web & Mentor backend",
-    "Développement web, backend Python et encadrement technique des apprenants.",
-  ],
-  [
-    "2020 - aujourd’hui",
-    "Akon Tech",
-    "CEO & Fondateur",
-    "Communauté de développeurs, designers et créateurs de contenus. Leadership, gestion de projets et mentorat.",
-  ],
-  [
-    "2021 - 2025",
-    "Université Catholique de Bukavu",
-    "Baccalauréat en Génie Logiciel",
-    "Projet DiaSmart. Mention grande distinction.",
-  ],
+const timeline: {
+  start: number;
+  end: number | null;
+  company: string;
+  role: string;
+  text: string;
+}[] = [
+  {
+    start: 2025,
+    end: null,
+    company: "Nyumbani Express",
+    role: "CTO & Software Developer",
+    text: "Développement d’un ERP FullStack de travail immobilier, Mobile App et optimisation des performances.",
+  },
+  {
+    start: 2023,
+    end: null,
+    company: "Code, Growth Alive",
+    role: "Web Developer & Chargé de marketing",
+    text: "Développement d’applications web professionnelles, APIs sécurisées et optimisation des performances.",
+  },
+  {
+    start: 2022,
+    end: 2024,
+    company: "Google Developer Student Club",
+    role: "Lead Web & Mentor backend",
+    text: "Développement web, backend Python et encadrement technique des apprenants.",
+  },
+  {
+    start: 2020,
+    end: null,
+    company: "Akon Tech",
+    role: "CEO & Fondateur",
+    text: "Communauté de développeurs, designers et créateurs de contenus. Leadership, gestion de projets et mentorat.",
+  },
+  {
+    start: 2021,
+    end: 2025,
+    company: "Université Catholique de Bukavu",
+    role: "Baccalauréat en Génie Logiciel",
+    text: "Projet DiaSmart. Mention grande distinction.",
+  },
 ];
 
 const expertise = [
@@ -164,23 +174,18 @@ const expertise = [
   },
 ];
 
-export default function Page() {
+export function HomePage({ currentYear }: { currentYear: number }) {
   const [language, setLanguage] = useState<"fr" | "en">("fr");
   const [dark, setDark] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<number | null>(null);
-  const [currentYear, setCurrentYear] = useState<number | string>('...');
   const t = copy[language];
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
-  }, []);
 
   return (
     <main className={dark ? "site dark" : "site"}>
       <header className="nav-wrap">
         <nav className="nav container" aria-label="Navigation principale">
-          <a href="#top" className="brand" aria-label="Isaac Akonkwa — accueil">
+          <a href="#top" className="brand" aria-label="Isaac Akonkwa, accueil">
             <span className="brand-mark">A</span>
             <span>
               Isaac
@@ -281,7 +286,12 @@ export default function Page() {
           <h2>{t.aboutTitle}</h2>
           <div>
             <p className="lead">{t.aboutText}</p>
-            <a className="text-link" href="#contact">
+            <a
+              className="text-link"
+              href="https://linkedin.com/in/akonizk"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               LinkedIn <ArrowUpRight size={16} />
             </a>
           </div>
@@ -335,7 +345,7 @@ export default function Page() {
           </a>
         </div>
         <div className="timeline">
-          {timeline.map(([date, company, role, text], index) => (
+          {timeline.map(({ start, end, company, role, text }, index) => (
             <motion.article
               className="timeline-item"
               key={company}
@@ -344,7 +354,7 @@ export default function Page() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.08 }}
             >
-              <div className="timeline-date">{date}</div>
+              <div className="timeline-date">{formatPeriod(start, end, language)}</div>
               <div className="timeline-marker">
                 <span />
               </div>
