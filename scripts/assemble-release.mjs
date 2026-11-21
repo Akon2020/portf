@@ -6,7 +6,7 @@
 //   public/            public files
 //   dist/cron.js       cron entry point, dist/migrate.js migration runner
 //   drizzle/           SQL migrations
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
 const out = "release";
@@ -19,12 +19,43 @@ for (const file of required) {
 }
 
 rmSync(out, { recursive: true, force: true });
-cpSync(".next/standalone", out, { recursive: true, verbatimSymlinks: true });
+// Symlinks are skipped here: the package aliases are materialized below.
+cpSync(".next/standalone", out, { recursive: true, filter: (source) => !lstatSync(source).isSymbolicLink() });
 cpSync(".next/static", `${out}/.next/static`, { recursive: true });
 cpSync("public", `${out}/public`, { recursive: true });
 cpSync("dist", `${out}/dist`, { recursive: true });
 cpSync("drizzle", `${out}/drizzle`, { recursive: true });
 cpSync("scripts/check-release-pdf.mjs", `${out}/scripts/check-release-pdf.mjs`);
+
+// Turbopack loads external packages through hashed aliases such as
+// .next/node_modules/shiki-<hash>, created as absolute symlinks to the build
+// machine. They are replaced by real copies so the release works anywhere,
+// whatever the upload method (rsync or FTP). Their own dependencies resolve
+// from the release node_modules folder by the usual parent lookup.
+function materializeAliases(dir, target) {
+  if (!existsSync(dir)) return 0;
+  let count = 0;
+  for (const entry of readdirSync(dir)) {
+    const source = `${dir}/${entry}`;
+    const destination = `${target}/${entry}`;
+    if (lstatSync(source).isSymbolicLink()) {
+      rmSync(destination, { recursive: true, force: true });
+      // The traced copy in the standalone folder can be partial: the package is
+      // taken whole from the project node_modules (same relative path).
+      const resolved = realpathSync(source).replace(/\\/g, "/");
+      const relative = resolved.slice(resolved.lastIndexOf("/node_modules/") + "/node_modules/".length);
+      const nested = resolved.includes("/node_modules/") ? resolved.split("/node_modules/").slice(1).join("/node_modules/") : relative;
+      const full = existsSync(`node_modules/${nested}/package.json`) ? `node_modules/${nested}` : resolved;
+      cpSync(full, destination, { recursive: true, dereference: true });
+      aliasDependencies.push(...Object.keys(JSON.parse(readFileSync(`${destination}/package.json`, "utf8")).dependencies ?? {}));
+      count += 1;
+    } else if (entry.startsWith("@") && statSync(source).isDirectory()) {
+      count += materializeAliases(source, destination);
+    }
+  }
+  return count;
+}
+const aliasDependencies = [];
 
 // Next file tracing misses parts of some packages: platform specific native
 // bindings (optional dependencies of @node-rs/argon2 and sharp) and ESM
@@ -63,6 +94,11 @@ if (![...shipped].some((name) => name.startsWith("@node-rs/argon2-"))) {
   process.exit(1);
 }
 console.log(`${shipped.size} paquets copiés en entier (${FULL_PACKAGES.join(", ")} et dépendances).`);
+
+const aliases = materializeAliases(".next/standalone/.next/node_modules", `${out}/.next/node_modules`);
+// Dependencies of the aliased packages are shipped whole as well.
+for (const name of aliasDependencies) shipWithDependencies(name);
+console.log(`${aliases} alias de paquets externes copiés dans .next/node_modules, ${shipped.size} paquets complets au total.`);
 
 // Defensive clean-up: only runtime files are deployed.
 const notShipped = [
