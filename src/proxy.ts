@@ -19,6 +19,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  const portalPublic = pathname === "/espace-client/connexion" || pathname === "/espace-client/verifier";
+  if (pathname.startsWith("/espace-client") && !portalPublic && !request.cookies.has(SESSION_COOKIES.client)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/espace-client/connexion";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (isPrivate) {
     // Private areas are dynamic: strict CSP with a per request nonce.
     const nonce = Buffer.from(crypto.randomUUID()).toString("base64");

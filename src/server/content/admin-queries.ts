@@ -127,10 +127,11 @@ export async function reviewQueue() {
 
 /** Badges of the admin navigation, one cheap query per counter. */
 export async function adminCounters() {
-  const rows = await getDb().execute<{ messages: number; quotes: number; review: number }>(sql`
+  const rows = await getDb().execute<{ messages: number; quotes: number; review: number; invoices: number }>(sql`
     select
       (select count(*)::int from conversations where status = 'new') as messages,
       (select count(*)::int from quote_requests where status = 'new') as quotes,
+      (select count(*)::int from invoices where status = 'overdue' and deleted_at is null) as invoices,
       (
         (select count(*)::int from projects where needs_review and deleted_at is null) +
         (select count(*)::int from journey_items where needs_review and deleted_at is null) +
@@ -140,5 +141,5 @@ export async function adminCounters() {
       ) as review
   `);
   const row = rows[0];
-  return { messages: row?.messages ?? 0, quotes: row?.quotes ?? 0, review: row?.review ?? 0 };
+  return { messages: row?.messages ?? 0, quotes: row?.quotes ?? 0, review: row?.review ?? 0, invoices: row?.invoices ?? 0 };
 }
