@@ -1,10 +1,10 @@
 "use client";
 
-import { Bell, ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { Bell, ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { THEME_STORAGE_KEY } from "@/lib/theme-script";
+import { ThemeMenu } from "@/components/theme-menu";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/server/actions/auth";
 import { CommandPalette } from "./command-palette";
@@ -121,31 +121,11 @@ function UserCard({ user, compact }: { user: ShellProps["user"]; compact?: boole
 }
 
 function ThemeButton() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the theme applied before hydration
-    setDark(document.documentElement.classList.contains("dark"));
-  }, []);
   return (
-    <button
-      type="button"
-      onClick={() => {
-        const next = !dark;
-        setDark(next);
-        document.documentElement.classList.toggle("dark", next);
-        document.documentElement.style.colorScheme = next ? "dark" : "light";
-        try {
-          localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
-        } catch {
-          // Storage unavailable.
-        }
-      }}
-      aria-label={dark ? "Passer au thème clair" : "Passer au thème sombre"}
-      title={dark ? "Thème clair" : "Thème sombre"}
-      className="grid size-10 place-items-center rounded-xl border bg-card text-muted-foreground transition-colors hover:text-foreground"
-    >
-      {dark ? <Sun className="size-[18px]" aria-hidden="true" /> : <Moon className="size-[18px]" aria-hidden="true" />}
-    </button>
+    <ThemeMenu
+      labels={{ button: "Thème", light: "Clair", dark: "Sombre", system: "Système" }}
+      buttonClassName="size-10 rounded-xl bg-card text-muted-foreground hover:text-foreground"
+    />
   );
 }
 

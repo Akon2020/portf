@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { PortalBrand } from "@/components/portal/brand";
+import { PortalNav } from "@/components/portal/portal-nav";
 import { portalLogoutAction } from "@/server/actions/portal";
 import { requirePortal } from "@/server/services/portal";
 
@@ -27,6 +28,7 @@ export default async function PortalLayout({ children }: { children: React.React
             </form>
           </div>
         </div>
+        <PortalNav />
       </header>
       <main id="contenu" className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         {children}

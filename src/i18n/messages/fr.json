@@ -15,7 +15,9 @@
     "main": "Navigation principale",
     "quote": "Devis",
     "blog": "Blog",
-    "gallery": "Galerie"
+    "gallery": "Galerie",
+    "portal": "Espace client",
+    "quoteCta": "Demander un devis"
   },
   "theme": {
     "toggle": "Changer de thème",

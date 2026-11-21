@@ -15,7 +15,9 @@
     "main": "Main navigation",
     "quote": "Quote",
     "blog": "Blog",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "portal": "Client area",
+    "quoteCta": "Request a quote"
   },
   "theme": {
     "toggle": "Change theme",

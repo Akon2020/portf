@@ -89,17 +89,29 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
       <JsonLd data={person} />
 
       {/* Hero */}
-      <section className="container-site grid items-center gap-12 pb-16 pt-12 md:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+      <section className="container-site grid items-center gap-12 pb-14 pt-8 sm:pb-16 sm:pt-12 md:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
         <div>
+          {/* Phones: a compact portrait next to the name keeps the face above the fold. */}
+          <div className="mb-6 flex items-center gap-4 sm:hidden">
+            <div className="relative size-20 shrink-0 overflow-hidden rounded-[999px_999px_14px_14px] border bg-surface shadow-md">
+              {portrait && <MediaImage media={portrait} locale={locale} alt={t("hero.portraitAlt")} priority sizes="80px" className="size-full object-cover object-top" />}
+            </div>
+            <div className="min-w-0">
+              <p className="font-heading text-xl font-medium leading-tight">{profile.name}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("hero.since")} {profile.foundedYear}
+              </p>
+            </div>
+          </div>
           <p className="label-mono flex flex-wrap items-center gap-x-3 gap-y-2 text-muted-foreground">
             <span className="text-accent">{tr(profile.title, locale)}</span>
             <span aria-hidden="true">·</span>
             <span>{tr(profile.location, locale)}</span>
           </p>
-          <h1 className="mt-6 text-(length:--text-hero) font-medium leading-[0.98]">{tr(profile.heroHeading, locale)}</h1>
-          <p className="mt-6 max-w-xl text-(length:--text-body) text-muted-foreground">{tr(profile.heroIntro, locale)}</p>
+          <h1 className="mt-5 text-[clamp(2.3rem,10vw,3rem)] font-medium leading-[1.02] sm:mt-6 sm:text-(length:--text-hero) sm:leading-[0.98]">{tr(profile.heroHeading, locale)}</h1>
+          <p className="mt-5 max-w-xl text-(length:--text-body) text-muted-foreground sm:mt-6">{tr(profile.heroIntro, locale)}</p>
           {profile.available && (
-            <p className="mt-6 inline-flex items-center gap-2.5 rounded-full border bg-card px-3.5 py-1.5 text-sm">
+            <p className="mt-6 inline-flex max-w-full items-center gap-2.5 rounded-full border bg-card px-3.5 py-1.5 text-sm">
               <span className="relative flex size-2" aria-hidden="true">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-green opacity-60 motion-reduce:hidden" />
                 <span className="relative inline-flex size-2 rounded-full bg-brand-green" />
@@ -107,28 +119,28 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
               {tr(profile.availabilityLabel, locale)}
             </p>
           )}
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 grid grid-cols-1 gap-3 min-[440px]:grid-cols-2 sm:flex sm:flex-wrap sm:items-center">
             <Link
               href="/devis"
               data-track="cta_click"
               data-track-label="devis_hero"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5 sm:px-6"
             >
               {t("hero.ctaPrimary")}
               <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
-            <Link href="/projets" className="inline-flex h-12 items-center gap-2 rounded-full border px-6 text-sm font-medium hover:bg-surface">
+            <Link href="/projets" className="inline-flex h-12 items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium hover:bg-surface sm:px-6">
               {t("hero.ctaSecondary")}
               <ArrowDownRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
-          <SocialLinks links={socials} className="mt-8" />
+          <SocialLinks links={socials} className="mt-6 sm:mt-8" />
           <div className="mt-10">
             <StatsRow stats={stats.map((stat) => ({ ...stat, label: tr(stat.label, locale) }))} />
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+        <div className="relative mx-auto hidden w-full max-w-sm sm:block lg:max-w-none">
           <div
             aria-hidden="true"
             className="absolute inset-x-6 -bottom-6 top-10 -rotate-3 rounded-[2rem] border border-brand-orange/40"
