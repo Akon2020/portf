@@ -1,6 +1,6 @@
 # Exploitation et déploiement (cPanel)
 
-Ce document décrit l'installation et l'exploitation du site sur un hébergement cPanel mutualisé avec « Setup Node.js App » (Phusion Passenger). Il sera complété en phase 7 (Cloudflare, sauvegardes externes, rotation des secrets).
+Ce document décrit l'installation et l'exploitation du site sur un hébergement cPanel mutualisé avec « Setup Node.js App » (Phusion Passenger). Il couvre aussi les tâches planifiées, les notifications, la sécurité (Cloudflare, bannissements), les sauvegardes, la restauration et la rotation des secrets.
 
 ## 1. Vérifications préalables sur le cPanel
 
@@ -60,7 +60,7 @@ Cette clé chiffre les secrets TOTP : la perdre oblige à reconfigurer la double
 Hors du dossier de l'application pour survivre aux déploiements :
 
 ```sh
-mkdir -p ~/portfolio_data/uploads ~/portfolio_data/backups
+mkdir -p ~/portfolio_data/uploads ~/portfolio_data/private ~/portfolio_data/backups
 chmod 700 ~/portfolio_data
 ```
 
@@ -98,7 +98,7 @@ source ~/nodevenv/portfolio/22/bin/activate   # chemin affiché par Setup Node.j
 node dist/cron.js create-admin
 ```
 
-La commande demande l'e-mail, le nom et le mot de passe (saisie masquée). La double authentification est configurée à la première connexion sur `/admin`. Options :
+La commande demande l'e-mail, le nom et le mot de passe (saisie masquée). La connexion se fait ensuite sur `/auth/login`. La double authentification est facultative mais fortement recommandée : l'activer dès la première connexion dans Administration, « Sécurité du compte » (QR code, puis 10 codes de secours à conserver). Options :
 
 - `--email adresse` pour éviter la question ;
 - relancer la commande sur un compte existant réinitialise le mot de passe et révoque toutes les sessions ;
@@ -125,32 +125,86 @@ NODE=/home/<utilisateur>/nodevenv/portfolio/22/bin/node
 cd /home/<utilisateur>/portfolio && $NODE dist/cron.js <tâche> >> /home/<utilisateur>/portfolio_data/cron.log 2>&1
 ```
 
-| Fréquence | Tâche | Rôle |
+Horaires donnés pour un serveur réglé sur UTC : 5 h UTC correspond à 7 h à Bukavu (UTC+2). Vérifier l'heure du serveur avec `date` et adapter.
+
+| Fréquence (UTC) | Commande | Rôle |
 |---|---|---|
-| `*/5 * * * *` | `run-jobs` | file de jobs (e-mails, alertes, rappels), 4 minutes maximum par passage |
-| `15 0 * * *` | `nightly` | purge des limites de débit, sessions et jetons expirés, passage des devis échus en « expiré » |
+| `*/5 * * * *` | `dist/cron.js run-jobs` | file de jobs : e-mails en attente, rappels de tâches, alertes de sécurité groupées, renvoi vers Batela, puis synchronisation des bannissements si `BAN_SYNC` est activé. 4 minutes maximum par passage |
+| `0 5 * * *` | `dist/cron.js daily-digest` | récapitulatif de 7 h : tâches du jour et en retard, jalons proches, factures à suivre (e-mail et notification). Rien n'est envoyé si tout est vide |
+| `15 22 * * *` | `dist/cron.js nightly` | purge des limites de débit, sessions et jetons expirés, devis échus en « expiré », factures échues en « en retard », agrégation de l'audience de la veille, rétention (audience 13 mois, sécurité 12 mois, erreurs 3 mois) |
+| `30 0 * * *` | `sh scripts/backup.sh` | sauvegarde chiffrée de la base et des fichiers (section 7) |
 
-D'autres tâches arriveront avec les phases suivantes (`daily-digest`, `weekly`, sauvegarde). Chaque exécution de `run-jobs` et `nightly` est enregistrée dans la table `cron_runs`. Si l'hébergeur impose une fréquence plus faible, les rappels auront la précision correspondante.
+Chaque passage est enregistré dans la table `cron_runs`, visible dans Administration, Monitoring, Journaux, « Tâches planifiées ». Si la dernière exécution de `run-jobs` date de plus de 15 minutes, le cron ne tourne plus. Les rappels ont la précision du cron (5 minutes, ou plus si l'hébergeur impose une fréquence plus faible).
 
-L'heure du cron cPanel est souvent celle du serveur : convertir les horaires vers `Africa/Lubumbashi` (UTC+2).
+Autres commandes utiles :
 
-## 7. Sauvegardes (version initiale)
+- `dist/cron.js healthcheck` : vérifie base, Argon2id, dossier de données, `sharp` et SMTP ;
+- `dist/cron.js sync-bans` : synchronisation immédiate des bannissements ;
+- `dist/cron.js nightly AAAA-MM-JJ` : recalcule l'agrégat d'un jour donné ;
+- `dist/cron.js vapid-keys` : génère une paire de clés Web Push (section 8).
 
-En plus des sauvegardes cPanel, une sauvegarde quotidienne compressée :
+## 7. Sauvegardes et restauration
 
-```
-30 2 * * * pg_dump "$DATABASE_URL" | gzip > ~/portfolio_data/backups/db-$(date +\%F).sql.gz && find ~/portfolio_data/backups -name 'db-*.sql.gz' -mtime +14 -delete
-```
+En plus des sauvegardes du cPanel, `scripts/backup.sh` produit chaque nuit une archive chiffrée (AES-256, clé dérivée de `BACKUP_PASSPHRASE`) contenant le dump de la base et les dossiers `uploads` et `private`. Les archives de plus de `BACKUP_KEEP_DAYS` jours (30 par défaut) sont supprimées.
 
-Restauration :
+Copie hors de l'hébergement : installer `rclone` dans le dossier personnel (binaire statique), configurer une destination (par exemple Cloudflare R2, Backblaze ou Google Drive) avec `rclone config`, puis renseigner `BACKUP_REMOTE` (ex. `r2:portfolio-backups`). Sans `rclone`, télécharger régulièrement le dossier `~/portfolio_data/backups`.
+
+La phrase de passe doit être conservée hors du serveur (gestionnaire de mots de passe) : sans elle, les archives sont illisibles.
+
+Restauration (à tester une fois par trimestre sur une base vide) :
 
 ```sh
-gunzip -c ~/portfolio_data/backups/db-AAAA-MM-JJ.sql.gz | psql "$DATABASE_URL"
+cd ~/portfolio && set -a && . ./.env && set +a
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in ~/portfolio_data/backups/portfolio-AAAA-MM-JJ_HHMM.tar.gz.enc -out /tmp/restore.tar.gz -pass env:BACKUP_PASSPHRASE
+mkdir -p /tmp/restore && tar -xzf /tmp/restore.tar.gz -C /tmp/restore
+psql "$DATABASE_URL" < /tmp/restore/database.sql          # base vide ou recréée au préalable
+tar -xzf /tmp/restore/files.tar.gz -C ~/portfolio_data     # uploads et private
+rm -rf /tmp/restore /tmp/restore.tar.gz
+touch tmp/restart.txt
 ```
 
-La copie hors de l'hébergement et le chiffrement seront ajoutés en phase 7.
+## 8. Notifications Web Push
 
-## 8. Développement local
+1. Générer les clés : `node dist/cron.js vapid-keys`.
+2. Copier `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` dans « Setup Node.js App » et dans `.env`, avec `VAPID_SUBJECT=mailto:adresse`, puis redémarrer.
+3. Dans Administration, « Tâches et agenda », cliquer « Activer les notifications » sur chaque appareil (ordinateur, téléphone). Sur iPhone, ajouter d'abord l'administration à l'écran d'accueil (iOS 16.4 ou plus).
+
+Changer les clés désabonne tous les appareils : il faut réactiver les notifications sur chacun.
+
+## 9. Sécurité, Cloudflare et bannissements
+
+Le module de sécurité fonctionne seul : chaque requête est analysée, les IP bannies reçoivent une réponse 403. Recommandations :
+
+- **Ajouter vos IP habituelles à la liste blanche** (Monitoring, Bannissements, « Ajouter mon adresse », ou `IP_ALLOWLIST`). Elles ne sont jamais bannies et sont exclues de l'audience.
+- `TRUST_PROXY=true` est indispensable derrière Apache et Cloudflare, sinon toutes les requêtes ont l'adresse `0.0.0.0` (jamais bannie, donc aucune protection par IP).
+- Seuil de bannissement et alertes : Monitoring, Bannissements, « Réglages ». Durées progressives : 1 h, 24 h, 7 jours, puis permanent.
+
+**Cloudflare (recommandé)** : créer la zone, faire pointer les serveurs DNS du domaine vers Cloudflare, enregistrement A vers l'IP du cPanel en mode proxy (nuage orange), SSL « Full (strict) » (le certificat AutoSSL du cPanel reste valide). Le pays des visiteurs vient alors de l'en-tête `CF-IPCountry`. Pour bloquer les IP bannies dès Cloudflare :
+
+1. My Profile, API Tokens, « Create Token », modèle personnalisé avec la permission « Zone, Firewall Services, Edit » limitée à la zone du site ;
+2. renseigner `BAN_SYNC=cloudflare`, `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ZONE_ID` (onglet Overview de la zone) ;
+3. les bannissements sont envoyés comme règles d'accès « block » à chaque passage de `run-jobs`, et retirés à leur expiration ou levée.
+
+**Sans Cloudflare**, `BAN_SYNC=htaccess` et `HTACCESS_PATH` (le `.htaccess` du domaine) : seul le bloc entre `# BEGIN portfolio-bans` et `# END portfolio-bans` est réécrit (500 adresses maximum), après copie de sauvegarde `.htaccess.portfolio-backup`. Le reste du fichier (règles Passenger du cPanel) n'est jamais modifié.
+
+**Batela** : `MONITORING_TRANSPORT=batela`, `BATELA_ENDPOINT` et `BATELA_API_KEY`. Les événements restent stockés localement (tableaux de bord) et sont aussi envoyés par lots au format `{ v: 1, type, ts, app: "portfolio", data }`, avec reprise automatique en cas d'échec.
+
+## 10. Rotation des secrets
+
+| Secret | Procédure | Effet |
+|---|---|---|
+| `AUTH_ENCRYPTION_KEY` | nouvelle valeur, redémarrer, puis désactiver et réactiver la double authentification | les secrets TOTP chiffrés avec l'ancienne clé deviennent illisibles |
+| `AUTH_PEPPER` | à éviter : tous les mots de passe deviennent invalides, réinitialiser avec `create-admin` | déconnexion générale |
+| `SMTP_PASS` | changer dans cPanel, « Email Accounts », puis dans l'application et `.env` | aucun |
+| `CLOUDFLARE_API_TOKEN` | créer un nouveau jeton, remplacer, révoquer l'ancien | aucun |
+| `VAPID_*` | voir section 8 | réabonnement des appareils |
+| `IP_HASH_SALT_SECRET` | remplacer | les visiteurs du jour sont comptés deux fois |
+| `BACKUP_PASSPHRASE` | remplacer, garder l'ancienne tant que des archives chiffrées avec elle sont conservées | aucun |
+| Clé SSH de déploiement | nouvelle paire, clé publique dans cPanel, privée dans les secrets GitHub, supprimer l'ancienne | aucun |
+
+Après toute fuite suspectée : changer le mot de passe administrateur, « Déconnecter les autres sessions » dans Sécurité du compte, puis tourner les secrets concernés.
+
+## 11. Développement local
 
 Prérequis : Node 22 ou plus, pnpm, PostgreSQL local.
 

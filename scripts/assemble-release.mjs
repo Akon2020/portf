@@ -26,6 +26,7 @@ cpSync("public", `${out}/public`, { recursive: true });
 cpSync("dist", `${out}/dist`, { recursive: true });
 cpSync("drizzle", `${out}/drizzle`, { recursive: true });
 cpSync("scripts/check-release-pdf.mjs", `${out}/scripts/check-release-pdf.mjs`);
+cpSync("scripts/backup.sh", `${out}/scripts/backup.sh`);
 
 // Turbopack loads external packages through hashed aliases such as
 // .next/node_modules/shiki-<hash>, created as absolute symlinks to the build
