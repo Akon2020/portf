@@ -74,25 +74,75 @@ const T = {
 const formatDay = (value: string, locale: Locale) =>
   new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
 
-function IssuerHeader({ issuer, kind, number, dates }: { issuer: IssuerSettings; kind: string; number: string; dates: string[] }) {
+/** Readable text color on the brand color (white on dark colors, ink on light ones). */
+function textOn(hex: string): string {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((channel) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? "#132238" : "#FFFFFF";
+}
+
+/** Header of the online documents, in the brand color of the issuer, with the logo. */
+export function DocumentHeader({ issuer, kind, number, dates, logoUrl }: { issuer: IssuerSettings; kind: string; number: string; dates: string[]; logoUrl?: string | null }) {
+  const brand = /^#[0-9a-f]{6}$/i.test(issuer.brandColor) ? issuer.brandColor : "#C2410C";
+  const color = textOn(brand);
   return (
-    <header className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
-      <div>
-        <p className="font-heading text-2xl">{issuer.businessName || issuer.name}</p>
-        {issuer.businessName && <p className="text-sm">{issuer.name}</p>}
-        {issuer.address && <p className="text-sm text-muted-foreground">{issuer.address}</p>}
-        {issuer.email && <p className="text-sm text-muted-foreground">{issuer.email}</p>}
+    <header className="overflow-hidden rounded-2xl border bg-card">
+      <div className="flex flex-col justify-between gap-5 px-5 py-6 sm:flex-row sm:items-center sm:px-8" style={{ backgroundColor: brand, color }}>
+        <div className="flex items-center gap-4">
+          {logoUrl && (
+            <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-white p-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo served by the media route */}
+              <img src={logoUrl} alt="" className="max-h-full max-w-full object-contain" />
+            </span>
+          )}
+          <div>
+            <p className="font-heading text-2xl leading-tight">{issuer.businessName || issuer.name}</p>
+            {issuer.businessName && <p className="text-sm opacity-85">{issuer.name}</p>}
+          </div>
+        </div>
+        <div className="sm:text-right">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-85">{kind}</p>
+          <p className="font-mono text-lg">{number}</p>
+        </div>
       </div>
-      <div className="sm:text-right">
-        <p className="label-mono text-accent">{kind}</p>
-        <p className="font-mono text-lg">{number}</p>
-        {dates.map((line) => (
-          <p key={line} className="text-sm text-muted-foreground">
-            {line}
-          </p>
-        ))}
+      <div className="flex flex-col justify-between gap-3 px-5 py-4 text-sm sm:flex-row sm:px-8">
+        <div className="text-muted-foreground">
+          {issuer.address && <p>{issuer.address}</p>}
+          {[issuer.phone, issuer.email].filter(Boolean).length > 0 && <p>{[issuer.phone, issuer.email].filter(Boolean).join(" · ")}</p>}
+        </div>
+        <div className="sm:text-right">
+          {dates.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
       </div>
     </header>
+  );
+}
+
+export interface EngagementView {
+  title: string;
+  rows: { label: string; amount: number; strong?: boolean }[];
+  currency: "USD" | "CDF";
+}
+
+/** Whole engagement (quote or project budget): total, paid to date, remaining. */
+export function EngagementPanel({ engagement, locale }: { engagement: EngagementView; locale: Locale }) {
+  return (
+    <section className="mt-8 rounded-2xl border bg-card p-5">
+      <h2 className="label-mono text-muted-foreground">{engagement.title}</h2>
+      <dl className="mt-3 space-y-1.5 text-sm">
+        {engagement.rows.map((row) => (
+          <div key={row.label} className={`flex justify-between gap-4 ${row.strong ? "border-t pt-2 text-base font-semibold" : ""}`}>
+            <dt className={row.strong ? "" : "text-muted-foreground"}>{row.label}</dt>
+            <dd className="tabular-nums">{formatMoney(row.amount, engagement.currency, locale)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -121,7 +171,21 @@ function PdfLink({ token, label }: { token: string; label: string }) {
   );
 }
 
-export function InvoiceView({ invoice, items, issuer, token }: { invoice: Invoice; items: InvoiceItem[]; issuer: IssuerSettings; token: string }) {
+export function InvoiceView({
+  invoice,
+  items,
+  issuer,
+  token,
+  logoUrl,
+  engagement,
+}: {
+  invoice: Invoice;
+  items: InvoiceItem[];
+  issuer: IssuerSettings;
+  token: string;
+  logoUrl?: string | null;
+  engagement?: EngagementView | null;
+}) {
   const locale: Locale = invoice.locale === "en" ? "en" : "fr";
   const t = T[locale];
   const money = (cents: number) => formatMoney(cents, invoice.currency, locale);
@@ -129,7 +193,8 @@ export function InvoiceView({ invoice, items, issuer, token }: { invoice: Invoic
 
   return (
     <main lang={locale} className="mx-auto max-w-4xl px-4 py-10 sm:py-16">
-      <IssuerHeader
+      <DocumentHeader
+        logoUrl={logoUrl}
         issuer={issuer}
         kind={invoice.kind === "deposit" ? t.deposit : t.invoice}
         number={invoice.number ?? ""}
@@ -235,6 +300,7 @@ export function InvoiceView({ invoice, items, issuer, token }: { invoice: Invoic
           ))}
       </div>
 
+      {engagement && <EngagementPanel engagement={engagement} locale={locale} />}
       <div className="mt-8">
         <PdfLink token={token} label={t.pdf} />
       </div>
@@ -242,13 +308,29 @@ export function InvoiceView({ invoice, items, issuer, token }: { invoice: Invoic
   );
 }
 
-export function ReceiptView({ receipt, payment, invoice, issuer, token }: { receipt: Receipt; payment: Payment; invoice: Invoice; issuer: IssuerSettings; token: string }) {
+export function ReceiptView({
+  receipt,
+  payment,
+  invoice,
+  issuer,
+  token,
+  logoUrl,
+  engagement,
+}: {
+  receipt: Receipt;
+  payment: Payment;
+  invoice: Invoice;
+  issuer: IssuerSettings;
+  token: string;
+  logoUrl?: string | null;
+  engagement?: EngagementView | null;
+}) {
   const locale: Locale = invoice.locale === "en" ? "en" : "fr";
   const t = T[locale];
   const money = (cents: number, currency: Currency = payment.currency) => formatMoney(cents, currency, locale);
   return (
     <main lang={locale} className="mx-auto max-w-3xl px-4 py-10 sm:py-16">
-      <IssuerHeader issuer={issuer} kind={t.receipt} number={receipt.number} dates={[`${t.paidOn} ${formatDay(payment.paidAt, locale)}`]} />
+      <DocumentHeader logoUrl={logoUrl} issuer={issuer} kind={t.receipt} number={receipt.number} dates={[`${t.paidOn} ${formatDay(payment.paidAt, locale)}`]} />
       <Banner tone="success">{t.received(money(payment.amount), PAYMENT_METHOD_LABELS[payment.method][locale])}</Banner>
       <section className="mt-10 rounded-2xl border bg-card p-6">
         <p className="text-sm text-muted-foreground">
@@ -277,6 +359,7 @@ export function ReceiptView({ receipt, payment, invoice, issuer, token }: { rece
         </dl>
         {payment.note && <p className="mt-6 whitespace-pre-line text-sm text-muted-foreground">{payment.note}</p>}
       </section>
+      {engagement && <EngagementPanel engagement={engagement} locale={locale} />}
       <div className="mt-8">
         <PdfLink token={token} label={t.pdf} />
       </div>

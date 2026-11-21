@@ -3,11 +3,39 @@
 import type { FormState } from "@/server/actions/content";
 import type { IssuerSettings, SecuritySettings, TemplatesSettings } from "@/server/content/settings-schema";
 import { EntityForm } from "../entity-form";
-import { CheckboxField, TextAreaField, TextField } from "../fields";
+import { useState } from "react";
+import { CheckboxField, Field, TextAreaField, TextField } from "../fields";
+import { MediaPicker, type LibraryItem } from "../media-picker";
+
+const SWATCHES = ["#C2410C", "#132238", "#16A34A", "#1D4ED8", "#7C3AED", "#0F766E", "#B91C1C", "#111827"];
+
+/** Brand color of the documents: preset swatches, a color picker and the hex value. */
+function ColorField({ name, defaultValue, error }: { name: string; defaultValue: string; error?: string }) {
+  const [value, setValue] = useState(defaultValue);
+  return (
+    <Field label="Couleur des documents" htmlFor={`${name}-hex`} error={error} hint="Bandeau d'en-tête, tableau et totaux des devis, factures et reçus">
+      <div className="flex flex-wrap items-center gap-2">
+        {SWATCHES.map((swatch) => (
+          <button
+            key={swatch}
+            type="button"
+            onClick={() => setValue(swatch)}
+            aria-label={`Choisir ${swatch}`}
+            aria-pressed={value.toLowerCase() === swatch.toLowerCase()}
+            className="size-8 rounded-full border-2 border-transparent ring-offset-2 ring-offset-background aria-pressed:ring-2 aria-pressed:ring-foreground"
+            style={{ backgroundColor: swatch }}
+          />
+        ))}
+        <input type="color" value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#c2410c"} onChange={(event) => setValue(event.target.value)} aria-label="Couleur personnalisée" className="h-8 w-10 cursor-pointer rounded border bg-card" />
+        <input id={`${name}-hex`} name={name} value={value} onChange={(event) => setValue(event.target.value)} maxLength={7} className="h-9 w-28 rounded-lg border bg-card px-2 font-mono text-sm" />
+      </div>
+    </Field>
+  );
+}
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-export function IssuerSettingsForm({ action, value }: { action: Action; value: IssuerSettings }) {
+export function IssuerSettingsForm({ action, value, library }: { action: Action; value: IssuerSettings; library: LibraryItem[] }) {
   return (
     <EntityForm action={action}>
       {(errors) => (
@@ -16,6 +44,19 @@ export function IssuerSettingsForm({ action, value }: { action: Action; value: I
             Ces informations figurent sur les devis, factures et reçus. Les coordonnées de paiement et les identifiants légaux ne sont jamais
             remplis automatiquement : saisissez vos vraies valeurs.
           </p>
+          <div className="grid gap-6 admin-card p-5 sm:grid-cols-2">
+            <MediaPicker name="logoMediaId" label="Logo (PNG ou JPEG de préférence, fond transparent conseillé)" library={library} defaultValue={value.logoMediaId ? [value.logoMediaId] : []} />
+            <div className="space-y-4">
+              <ColorField name="brandColor" defaultValue={value.brandColor} error={errors.brandColor} />
+              <p className="text-xs text-muted-foreground">
+                Enregistrez puis{" "}
+                <a href="/admin/parametres/apercu-pdf" target="_blank" rel="noopener" className="font-medium text-accent underline underline-offset-4">
+                  ouvrez un aperçu de facture
+                </a>{" "}
+                pour voir le rendu.
+              </p>
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField name="name" label="Nom" required defaultValue={value.name} errors={errors} />
             <TextField name="businessName" label="Nom commercial" defaultValue={value.businessName} errors={errors} hint="Ex. Akon Tech" />

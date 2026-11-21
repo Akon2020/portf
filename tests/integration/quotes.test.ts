@@ -163,6 +163,44 @@ describe.skipIf(!hasTestDatabase)("quotes", () => {
     expect((await convertQuote(id, user)).projectId).toBe(result.projectId);
   });
 
+  it("follows a deposit until the whole quote is paid", async () => {
+    const user = await actor();
+    const id = await createQuoteDraft({}, user);
+    await saveQuoteDraft(id, input(), user);
+    const { quote: draft } = (await getQuote(id))!;
+    await sendQuoteByEmail(id, {}, user);
+    await acceptQuote(draft.publicToken, "Amani Bahati", meta);
+    const { invoiceId } = await convertQuote(id, user, { depositPercent: 40 });
+    const { quote } = (await getQuote(id))!;
+    const deposit = Math.round(quote.total * 0.4);
+
+    const { sendInvoiceByEmail, recordPayment, paymentInputSchema, engagementSummary, createBalanceInvoice, getInvoice } = await import("@/server/services/invoices");
+    await sendInvoiceByEmail(invoiceId!, {}, user);
+    await recordPayment(invoiceId!, paymentInputSchema.parse({ amount: String(deposit / 100), method: "mpesa", reference: "", paidAt: "2026-11-20", note: "" }), user);
+    const { invoice } = (await getInvoice(invoiceId!))!;
+    expect(invoice.status).toBe("paid");
+
+    let summary = (await engagementSummary(invoice))!;
+    expect(summary.total).toBe(quote.total);
+    expect(summary.paid).toBe(deposit);
+    expect(summary.remaining).toBe(quote.total - deposit);
+    expect(summary.toInvoice).toBe(quote.total - deposit);
+
+    const balanceId = await createBalanceInvoice(invoiceId!, user);
+    const balance = (await getInvoice(balanceId))!;
+    expect(balance.invoice.total).toBe(quote.total - deposit);
+    expect(balance.invoice.quoteId).toBe(id);
+    summary = (await engagementSummary(invoice))!;
+    expect(summary.toInvoice).toBe(0);
+    await expect(createBalanceInvoice(invoiceId!, user)).rejects.toThrow(/déjà facturé/);
+
+    await sendInvoiceByEmail(balanceId, {}, user);
+    await recordPayment(balanceId, paymentInputSchema.parse({ amount: String((quote.total - deposit) / 100), method: "cash", reference: "", paidAt: "2026-11-20", note: "" }), user);
+    summary = (await engagementSummary(invoice))!;
+    expect(summary.paid).toBe(quote.total);
+    expect(summary.remaining).toBe(0);
+  });
+
   it("expires quotes past their validity", async () => {
     const user = await actor();
     const id = await createQuoteDraft({}, user);

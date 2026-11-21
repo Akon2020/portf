@@ -172,7 +172,7 @@ export async function saveSettingsAction(key: SettingsKey, _state: FormState, fo
   if (key === "profile" && Array.isArray(raw.values)) {
     raw.values = (raw.values as { title?: { fr?: string } }[]).filter((value) => value?.title?.fr?.trim());
   }
-  for (const field of ["portraitMediaId", "frMediaId", "enMediaId"]) {
+  for (const field of ["portraitMediaId", "frMediaId", "enMediaId", "logoMediaId"]) {
     if (raw[field] === "") raw[field] = null;
   }
   const parsed = SETTINGS_SCHEMAS[key].safeParse(cleanDeep(raw));

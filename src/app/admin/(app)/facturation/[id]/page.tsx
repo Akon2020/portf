@@ -17,11 +17,12 @@ import {
   sendReceiptEmailAction,
   whatsappInvoiceAction,
   whatsappReceiptAction,
+  createBalanceInvoiceAction,
 } from "@/server/actions/crm";
 import { requireAdmin } from "@/server/auth/guards";
 import { getDb } from "@/server/db";
 import { documentSends } from "@/server/db/schema";
-import { OPEN_STATUSES, PAYMENT_METHOD_LABELS, getInvoice, publicDocumentUrl } from "@/server/services/invoices";
+import { OPEN_STATUSES, PAYMENT_METHOD_LABELS, engagementSummary, getInvoice, publicDocumentUrl } from "@/server/services/invoices";
 import { today } from "@/server/services/quotes";
 import { INVOICE_STATUS } from "../../clients/labels";
 
@@ -44,6 +45,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     .from(documentSends)
     .where(receiptIds.length ? or(eq(documentSends.documentId, id), inArray(documentSends.documentId, receiptIds)) : eq(documentSends.documentId, id));
   const isDraft = invoice.status === "draft";
+  const engagement = await engagementSummary(invoice);
   const open = OPEN_STATUSES.includes(invoice.status);
   const money = (cents: number) => formatMoney(cents, invoice.currency);
   const [statusLabel, statusTone] = INVOICE_STATUS[invoice.status];
@@ -239,6 +241,52 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               <h2 className="mb-3 text-base font-semibold">Annulation</h2>
               <p className="mb-3 text-sm text-muted-foreground">Une facture envoyée n&apos;est jamais modifiée : annulez-la puis créez-en une nouvelle.</p>
               <CancelInvoiceForm action={cancelInvoiceAction.bind(null, id)} />
+            </section>
+          )}
+          {engagement && (
+            <section className="admin-card p-5">
+              <h2 className="text-base font-semibold">Suivi des paiements</h2>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">{engagement.kind === "quote" ? "Devis" : "Projet"} {engagement.label}</p>
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-surface" role="progressbar" aria-label="Part réglée" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((engagement.paid / Math.max(1, engagement.total)) * 100)}>
+                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (engagement.paid / Math.max(1, engagement.total)) * 100)}%` }} />
+              </div>
+              <dl className="mt-4 space-y-1.5 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Montant total</dt>
+                  <dd className="tabular-nums">{formatMoney(engagement.total, engagement.currency)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Facturé</dt>
+                  <dd className="tabular-nums">{formatMoney(engagement.invoiced, engagement.currency)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Réglé (tous paiements)</dt>
+                  <dd className="tabular-nums text-success">{formatMoney(engagement.paid, engagement.currency)}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-t pt-2 font-semibold">
+                  <dt>Reste à payer</dt>
+                  <dd className="tabular-nums">{formatMoney(engagement.remaining, engagement.currency)}</dd>
+                </div>
+              </dl>
+              <ul className="mt-4 space-y-1.5 border-t pt-3 text-xs">
+                {engagement.invoices.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between gap-2">
+                    <Link href={`/admin/facturation/${row.id}`} className={`font-mono hover:text-accent ${row.id === invoice.id ? "font-semibold" : ""}`}>
+                      {row.number ?? "Brouillon"}
+                      {row.kind === "deposit" ? " (acompte)" : ""}
+                    </Link>
+                    <span className="tabular-nums text-muted-foreground">{row.status === "cancelled" ? "annulée" : `${formatMoney(row.amountPaid, engagement.currency)} / ${formatMoney(row.total, engagement.currency)}`}</span>
+                  </li>
+                ))}
+              </ul>
+              {engagement.toInvoice > 0 ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">Reste à facturer : {formatMoney(engagement.toInvoice, engagement.currency)}</p>
+                  <ResultButton action={createBalanceInvoiceAction.bind(null, invoice.id)} label="Facturer le solde" confirmText="Créer une facture brouillon pour le solde restant ?" />
+                </div>
+              ) : engagement.remaining === 0 ? (
+                <p className="mt-4 text-sm font-medium text-success">Montant total entièrement réglé.</p>
+              ) : null}
             </section>
           )}
           {invoice.lastReminderAt && <p className="text-xs text-muted-foreground">Dernière relance le {dateTime.format(invoice.lastReminderAt)}.</p>}

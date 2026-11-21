@@ -7,8 +7,10 @@ import { readSettingUncached } from "@/server/content/queries";
 import { acceptQuoteAction, declineQuoteAction } from "@/server/actions/documents";
 import { recordAppSignal } from "@/monitoring/record";
 import { getRequestContext } from "@/server/request-context";
-import { InvoiceView, ReceiptView } from "@/components/public/document-views";
-import { getInvoiceByToken, getReceiptByToken, markInvoiceViewed } from "@/server/services/invoices";
+import { DocumentHeader, InvoiceView, ReceiptView, type EngagementView } from "@/components/public/document-views";
+import { getMediaById } from "@/server/content/queries";
+import type { Invoice } from "@/server/db/schema";
+import { engagementRows, engagementSummary, getInvoiceByToken, getReceiptByToken, markInvoiceViewed } from "@/server/services/invoices";
 import { getQuoteByToken, isExpired, markQuoteViewed } from "@/server/services/quotes";
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
@@ -77,6 +79,18 @@ const T = {
   },
 };
 
+async function brandAssets() {
+  const issuer = await readSettingUncached("issuer");
+  const logo = issuer.logoMediaId ? await getMediaById(issuer.logoMediaId) : null;
+  return { issuer, logoUrl: logo ? (logo.srcSet[0]?.url ?? logo.url) : null };
+}
+
+async function engagementFor(invoice: Invoice): Promise<EngagementView | null> {
+  const summary = await engagementSummary(invoice);
+  if (!summary) return null;
+  return { ...engagementRows(summary, invoice.locale === "en" ? "en" : "fr"), currency: summary.currency };
+}
+
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const found = await getQuoteByToken(token);
@@ -85,11 +99,15 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     const invoice = await getInvoiceByToken(token);
     if (invoice) {
       await markInvoiceViewed(invoice.invoice);
-      return <InvoiceView invoice={invoice.invoice} items={invoice.items} issuer={await readSettingUncached("issuer")} token={token} />;
+      const { issuer, logoUrl } = await brandAssets();
+      return <InvoiceView invoice={invoice.invoice} items={invoice.items} issuer={issuer} logoUrl={logoUrl} engagement={await engagementFor(invoice.invoice)} token={token} />;
     }
     const receipt = await getReceiptByToken(token);
     if (receipt) {
-      return <ReceiptView receipt={receipt.receipt} payment={receipt.payment} invoice={receipt.invoice} issuer={await readSettingUncached("issuer")} token={token} />;
+      const { issuer, logoUrl } = await brandAssets();
+      return (
+        <ReceiptView receipt={receipt.receipt} payment={receipt.payment} invoice={receipt.invoice} issuer={issuer} logoUrl={logoUrl} engagement={await engagementFor(receipt.invoice)} token={token} />
+      );
     }
     // Repeated invalid tokens from one IP look like enumeration: slow them down.
     const { ip } = await getRequestContext();
@@ -106,7 +124,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   await markQuoteViewed(quote);
   const locale = quote.locale === "en" ? "en" : "fr";
   const t = T[locale];
-  const issuer = await readSettingUncached("issuer");
+  const { issuer, logoUrl } = await brandAssets();
   const money = (cents: number) => formatMoney(cents, quote.currency, locale);
   const date = (value: string | Date) =>
     new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", { dateStyle: "long", timeZone: "UTC" }).format(
@@ -123,24 +141,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
   return (
     <main lang={locale} className="mx-auto max-w-4xl px-4 py-10 sm:py-16">
-      <header className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
-        <div>
-          <p className="font-heading text-2xl">{issuer.businessName || issuer.name}</p>
-          {issuer.businessName && <p className="text-sm">{issuer.name}</p>}
-          {issuer.address && <p className="text-sm text-muted-foreground">{issuer.address}</p>}
-          {issuer.email && <p className="text-sm text-muted-foreground">{issuer.email}</p>}
-        </div>
-        <div className="sm:text-right">
-          <p className="label-mono text-accent">{t.quote}</p>
-          <p className="font-mono text-lg">{quote.number}</p>
-          <p className="text-sm text-muted-foreground">
-            {t.issued} {date(quote.issueDate)}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {t.valid} {date(quote.validUntil)}
-          </p>
-        </div>
-      </header>
+      <DocumentHeader issuer={issuer} logoUrl={logoUrl} kind={t.quote} number={quote.number ?? ""} dates={[`${t.issued} ${date(quote.issueDate)}`, `${t.valid} ${date(quote.validUntil)}`]} />
 
       {quote.status === "accepted" && quote.acceptedAt && (
         <p role="status" className="mt-8 flex items-center gap-2 rounded-xl border border-success/40 bg-success/5 p-4 text-sm">

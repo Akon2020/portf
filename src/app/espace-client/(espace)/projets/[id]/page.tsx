@@ -6,6 +6,7 @@ import { PortalMessageForm } from "@/components/portal/portal-forms";
 import { formatMoney } from "@/lib/money";
 import { portalMessageAction } from "@/server/actions/portal";
 import { getClientProjectDetail } from "@/server/services/clients";
+import { engagementSummary } from "@/server/services/invoices";
 import { requirePortal } from "@/server/services/portal";
 
 export const metadata: Metadata = { title: "Projet" };
@@ -21,6 +22,8 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
   const detail = await getClientProjectDetail(id, { clientId, visibleOnly: true });
   if (!detail) notFound();
   const { project } = detail;
+  const firstInvoice = detail.invoices[0];
+  const engagement = firstInvoice ? await engagementSummary(firstInvoice) : null;
 
   return (
     <div className="space-y-6">
@@ -75,6 +78,29 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
           </div>
         )}
       </section>
+
+      {engagement && (
+        <section className="admin-card p-5 sm:p-6">
+          <h2 className="text-base font-semibold">Paiements</h2>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-surface" role="progressbar" aria-label="Part réglée" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((engagement.paid / Math.max(1, engagement.total)) * 100)}>
+            <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (engagement.paid / Math.max(1, engagement.total)) * 100)}%` }} />
+          </div>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-muted-foreground">Montant total</dt>
+              <dd className="text-lg font-semibold tabular-nums">{formatMoney(engagement.total, engagement.currency)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Déjà réglé</dt>
+              <dd className="text-lg font-semibold tabular-nums text-success">{formatMoney(engagement.paid, engagement.currency)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Reste à payer</dt>
+              <dd className="text-lg font-semibold tabular-nums">{formatMoney(engagement.remaining, engagement.currency)}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
 
       <div className="grid gap-6 *:min-w-0 lg:grid-cols-2">
         <section className="admin-card p-5 sm:p-6">

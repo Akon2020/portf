@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { cn } from "@/lib/utils";
 import { saveSettingsAction } from "@/server/actions/content";
 import { requireAdmin } from "@/server/auth/guards";
+import { listLibrary } from "@/server/content/admin-queries";
 import { readSettingUncached } from "@/server/content/queries";
 
 export const metadata: Metadata = { title: "Paramètres" };
@@ -22,7 +23,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   const form =
     onglet === "emetteur" ? (
-      <IssuerSettingsForm action={saveSettingsAction.bind(null, "issuer")} value={await readSettingUncached("issuer")} />
+      <IssuerSettingsForm action={saveSettingsAction.bind(null, "issuer")} value={await readSettingUncached("issuer")} library={await listLibrary()} />
     ) : (
       <TemplatesSettingsForm action={saveSettingsAction.bind(null, "templates")} value={await readSettingUncached("templates")} />
     );

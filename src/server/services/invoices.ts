@@ -640,3 +640,142 @@ export async function invoicesCsv(): Promise<string> {
 }
 
 export type InvoiceWithItems = { invoice: Invoice; items: InvoiceItem[] };
+
+// Engagement: the quote (or project budget) followed until it is fully paid.
+
+export interface EngagementSummary {
+  kind: "quote" | "project";
+  label: string;
+  currency: Currency;
+  /** Total to pay for the whole engagement. */
+  total: number;
+  /** Issued invoices (drafts and cancelled ones excluded). */
+  invoiced: number;
+  /** Payments received on every invoice of the engagement. */
+  paid: number;
+  remaining: number;
+  /** Amount still to invoice, drafts included, so nothing is billed twice. */
+  toInvoice: number;
+  invoices: Pick<Invoice, "id" | "number" | "kind" | "title" | "status" | "total" | "amountPaid" | "balance" | "issueDate">[];
+  quoteId: string | null;
+  clientProjectId: string | null;
+}
+
+/**
+ * Totals of the quote (or, without quote, of the project budget) an invoice
+ * belongs to. Only amounts in the same currency are counted.
+ */
+export async function engagementSummary(invoice: Pick<Invoice, "quoteId" | "clientProjectId" | "currency">): Promise<EngagementSummary | null> {
+  const db = getDb();
+  let kind: EngagementSummary["kind"];
+  let total: number;
+  let label: string;
+  let quoteId: string | null = null;
+  let clientProjectId: string | null = invoice.clientProjectId;
+  if (invoice.quoteId) {
+    const [quote] = await db.select().from(quotes).where(eq(quotes.id, invoice.quoteId)).limit(1);
+    if (!quote || quote.currency !== invoice.currency) return null;
+    kind = "quote";
+    total = quote.total;
+    label = quote.number ? `${quote.number} : ${quote.title}` : quote.title;
+    quoteId = quote.id;
+    clientProjectId = quote.clientProjectId ?? clientProjectId;
+  } else if (invoice.clientProjectId) {
+    const [project] = await db.select().from(clientProjects).where(eq(clientProjects.id, invoice.clientProjectId)).limit(1);
+    if (!project?.budget || project.currency !== invoice.currency) return null;
+    kind = "project";
+    total = project.budget;
+    label = project.name;
+  } else {
+    return null;
+  }
+  const rows = await db
+    .select({
+      id: invoices.id,
+      number: invoices.number,
+      kind: invoices.kind,
+      title: invoices.title,
+      status: invoices.status,
+      total: invoices.total,
+      amountPaid: invoices.amountPaid,
+      balance: invoices.balance,
+      issueDate: invoices.issueDate,
+    })
+    .from(invoices)
+    .where(
+      and(
+        isNull(invoices.deletedAt),
+        eq(invoices.currency, invoice.currency),
+        quoteId ? eq(invoices.quoteId, quoteId) : eq(invoices.clientProjectId, clientProjectId!),
+      ),
+    )
+    .orderBy(asc(invoices.issueDate), asc(invoices.createdAt));
+  const issued = rows.filter((row) => row.status !== "draft" && row.status !== "cancelled");
+  const invoiced = issued.reduce((sum, row) => sum + row.total, 0);
+  const paid = rows.reduce((sum, row) => sum + (row.status === "cancelled" ? 0 : row.amountPaid), 0);
+  const committed = rows.filter((row) => row.status !== "cancelled").reduce((sum, row) => sum + row.total, 0);
+  return {
+    kind,
+    label,
+    currency: invoice.currency,
+    total,
+    invoiced,
+    paid,
+    remaining: Math.max(0, total - paid),
+    toInvoice: Math.max(0, total - committed),
+    invoices: rows,
+    quoteId,
+    clientProjectId,
+  };
+}
+
+/** Draft invoice for what remains to invoice on a quote or project (deposit already billed). */
+export async function createBalanceInvoice(fromInvoiceId: string, actor: Actor): Promise<string> {
+  const data = await getInvoice(fromInvoiceId);
+  if (!data) throw new InvoiceError("Facture introuvable.");
+  const summary = await engagementSummary(data.invoice);
+  if (!summary) throw new InvoiceError("Cette facture n'est rattachée à aucun devis ni budget de projet.");
+  if (summary.toInvoice <= 0) throw new InvoiceError("Tout le montant prévu est déjà facturé.");
+  const locale = data.invoice.locale === "en" ? "en" : "fr";
+  const fr = locale === "fr";
+  const id = await createInvoiceDraft({ clientId: data.invoice.clientId, clientProjectId: summary.clientProjectId }, actor);
+  const issuer = await readSettingUncached("issuer");
+  await getDb().transaction(async (tx) => {
+    const line = {
+      description: fr ? `Solde ${summary.kind === "quote" ? "du devis" : "du projet"} ${summary.label}` : `Balance of ${summary.label}`,
+      quantity: "1",
+      unitPrice: summary.toInvoice,
+    };
+    await tx
+      .update(invoices)
+      .set({
+        quoteId: summary.quoteId,
+        title: fr ? `Solde : ${summary.label}` : `Balance: ${summary.label}`,
+        locale,
+        currency: summary.currency,
+        exchangeRate: data.invoice.exchangeRate,
+        subtotal: summary.toInvoice,
+        total: summary.toInvoice,
+        balance: summary.toInvoice,
+        terms: data.invoice.terms ?? (issuer.invoiceTerms || null),
+      })
+      .where(eq(invoices.id, id));
+    await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
+    await tx.insert(invoiceItems).values({ invoiceId: id, ...line, total: summary.toInvoice, sortOrder: 0 });
+  });
+  await writeAudit({ actorId: actor.id, action: "invoice.balance", entityType: "invoice", entityId: id, diff: { from: fromInvoiceId, amount: summary.toInvoice }, ip: actor.ip });
+  return id;
+}
+
+/** Rows printed on invoices and receipts: the whole engagement until it is cleared. */
+export function engagementRows(summary: EngagementSummary, locale: "fr" | "en") {
+  const fr = locale === "fr";
+  return {
+    title: fr ? `Suivi des paiements : ${summary.label}` : `Payment tracking: ${summary.label}`,
+    rows: [
+      { label: fr ? (summary.kind === "quote" ? "Montant total du devis" : "Budget total du projet") : "Total amount", amount: summary.total },
+      { label: fr ? "Total réglé à ce jour (tous paiements)" : "Paid to date (all payments)", amount: summary.paid },
+      { label: fr ? "Reste à payer" : "Remaining to pay", amount: summary.remaining, strong: true },
+    ],
+  };
+}

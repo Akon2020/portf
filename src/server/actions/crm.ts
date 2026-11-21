@@ -300,3 +300,14 @@ export async function whatsappReceiptAction(receiptId: string): Promise<{ link?:
     throw error;
   }
 }
+
+export async function createBalanceInvoiceAction(fromInvoiceId: string): Promise<CrmFormState> {
+  let id: string;
+  try {
+    const { createBalanceInvoice } = await import("../services/invoices");
+    id = await createBalanceInvoice(fromInvoiceId, await actor());
+  } catch (error) {
+    return failure(error);
+  }
+  redirect(`/admin/facturation/${id}`);
+}

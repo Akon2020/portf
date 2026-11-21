@@ -5,12 +5,14 @@ import type { DocumentProps } from "@react-pdf/renderer";
 import { formatMoney } from "@/lib/money";
 import { readSettingUncached } from "@/server/content/settings-store";
 import type { Invoice, InvoiceItem, Payment, Quote, QuoteItem, Receipt } from "@/server/db/schema";
-import { PAYMENT_METHOD_LABELS, formatDocDate, publicDocumentUrl } from "@/server/services/invoices";
+import { PAYMENT_METHOD_LABELS, engagementRows, engagementSummary, formatDocDate, publicDocumentUrl } from "@/server/services/invoices";
 import { BusinessDocument, type BusinessDocumentData } from "./business-document";
+import { loadLogo } from "./logo";
 
 async function render(data: BusinessDocumentData): Promise<Buffer> {
   const issuer = await readSettingUncached("issuer");
-  const element = createElement(BusinessDocument, { data, issuer }) as unknown as ReactElement<DocumentProps>;
+  const logo = await loadLogo(issuer.logoMediaId);
+  const element = createElement(BusinessDocument, { data, issuer, logo }) as unknown as ReactElement<DocumentProps>;
   return renderToBuffer(element);
 }
 
@@ -61,6 +63,7 @@ export async function renderInvoicePdf(invoice: Invoice, items: InvoiceItem[]): 
   const locale = localeOf(invoice.locale);
   const fr = locale === "fr";
   const issuer = await readSettingUncached("issuer");
+  const summary = invoice.status === "draft" ? null : await engagementSummary(invoice);
   const stamp =
     invoice.status === "paid"
       ? { text: fr ? "PAYÉE" : "PAID", tone: "success" as const }
@@ -91,6 +94,7 @@ export async function renderInvoicePdf(invoice: Invoice, items: InvoiceItem[]): 
     exchangeRate: invoice.exchangeRate,
     approxBase: invoice.amountPaid > 0 ? invoice.balance : invoice.total,
     stamp,
+    engagement: summary ? engagementRows(summary, locale) : null,
     sections: [
       [fr ? "Notes" : "Notes", invoice.notes],
       [fr ? "Conditions" : "Terms", invoice.terms],
@@ -105,6 +109,7 @@ export async function renderReceiptPdf(receipt: Receipt, payment: Payment, invoi
   const fr = locale === "fr";
   const method = PAYMENT_METHOD_LABELS[payment.method][locale];
   const amount = formatMoney(payment.amount, payment.currency, locale);
+  const summary = await engagementSummary(invoice);
   return render({
     locale,
     heading: fr ? "REÇU" : "RECEIPT",
@@ -137,7 +142,48 @@ export async function renderReceiptPdf(receipt: Receipt, payment: Payment, invoi
     exchangeRate: null,
     approxBase: payment.amount,
     stamp: { text: fr ? `Reçu de ${amount}, merci.` : `Received ${amount}, thank you.`, tone: "success" },
+    engagement: summary ? engagementRows(summary, locale) : null,
     sections: [[fr ? "Note" : "Note", payment.note]],
     qr: { dataUrl: await qr(receipt.publicToken), label: fr ? "Vérifier ce reçu en ligne" : "Verify this receipt online" },
+  });
+}
+
+/** Sample invoice with the current issuer settings, to preview the color and the logo. */
+export async function renderSamplePdf(): Promise<Buffer> {
+  const today = new Date().toISOString().slice(0, 10);
+  return render({
+    locale: "fr",
+    heading: "FACTURE",
+    number: "APERCU",
+    dates: [
+      ["Date d'émission", formatDocDate(today, "fr")],
+      ["Échéance", formatDocDate(today, "fr")],
+    ],
+    recipient: { name: "Client exemple", lines: ["Aperçu du modèle, aucune facture réelle"] },
+    subject: "Aperçu de la mise en page",
+    currency: "USD",
+    items: [
+      { id: "a", description: "Ligne d'exemple", quantity: "1", unitPrice: 100000, total: 100000 },
+      { id: "b", description: "Deuxième ligne d'exemple", quantity: "2", unitPrice: 25000, total: 50000 },
+    ],
+    totals: { subtotal: 150000, discount: 0, taxRate: 0, taxAmount: 0, total: 150000 },
+    grandLabel: "Total",
+    extraRows: [
+      { label: "Déjà payé", amount: 50000 },
+      { label: "Solde à payer", amount: 100000, strong: true },
+    ],
+    exchangeRate: null,
+    approxBase: 100000,
+    stamp: null,
+    engagement: {
+      title: "Suivi des paiements : exemple",
+      rows: [
+        { label: "Montant total du devis", amount: 300000 },
+        { label: "Total réglé à ce jour (tous paiements)", amount: 50000 },
+        { label: "Reste à payer", amount: 250000, strong: true },
+      ],
+    },
+    sections: [["Modalités de paiement", (await readSettingUncached("issuer")).paymentDetails || "Vos modalités de paiement apparaîtront ici."]],
+    qr: null,
   });
 }

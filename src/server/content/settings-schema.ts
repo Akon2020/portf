@@ -75,6 +75,13 @@ export const issuerSettingsSchema = z.object({
   quoteTerms: z.string().trim().max(3000).default(""),
   invoiceTerms: z.string().trim().max(3000).default(""),
   exchangeRate: z.string().trim().max(20).default(""),
+  /** Main color of quotes, invoices and receipts (header band, table, totals). */
+  brandColor: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Couleur au format #RRGGBB")
+    .default("#C2410C"),
+  logoMediaId: z.string().uuid().nullable().default(null),
 });
 
 export const templatesSettingsSchema = z.object({
@@ -184,6 +191,8 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
     quoteTerms: "",
     invoiceTerms: "",
     exchangeRate: "",
+    brandColor: "#C2410C",
+    logoMediaId: null,
   },
   templates: {
     replies: [
