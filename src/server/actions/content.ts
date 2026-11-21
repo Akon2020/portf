@@ -28,7 +28,7 @@ import {
   projectSchema,
   serviceSchema,
   skillSchema,
-  socialLinkSchema,
+  socialLinkSchema, faqSchema, partnerSchema,
   statSchema,
   testimonialSchema,
 } from "../content/schemas";
@@ -58,7 +58,7 @@ function failure(error: unknown): FormState {
 const INVALID = "Le formulaire contient des erreurs.";
 
 /** Entity names as they appear in admin URLs. */
-export type EntityRoute = "parcours" | "competences" | "services" | "temoignages" | "chiffres" | "reseaux";
+export type EntityRoute = "parcours" | "competences" | "services" | "temoignages" | "chiffres" | "reseaux" | "faq" | "partenaires";
 
 const ENTITY_CONFIG = {
   parcours: { entity: "journey", schema: journeySchema, booleans: ["needsReview"] },
@@ -67,6 +67,8 @@ const ENTITY_CONFIG = {
   temoignages: { entity: "testimonial", schema: testimonialSchema, booleans: ["needsReview"] },
   chiffres: { entity: "stat", schema: statSchema, booleans: ["isVisible"] },
   reseaux: { entity: "social", schema: socialLinkSchema, booleans: ["isVisible"] },
+  faq: { entity: "faq", schema: faqSchema, booleans: ["isVisible", "showOnHome"] },
+  partenaires: { entity: "partner", schema: partnerSchema, booleans: ["isVisible"] },
 } as const satisfies Record<EntityRoute, { entity: SimpleEntityName; schema: unknown; booleans: string[] }>;
 
 // Projects

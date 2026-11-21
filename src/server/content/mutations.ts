@@ -11,6 +11,8 @@ import {
   settings,
   skills,
   socialLinks,
+  faqs,
+  partners,
   stats,
   testimonials,
 } from "../db/schema";
@@ -22,6 +24,8 @@ import type {
   ServiceInput,
   SkillInput,
   SocialLinkInput,
+  FaqInput,
+  PartnerInput,
   StatInput,
   TestimonialInput,
 } from "./schemas";
@@ -148,6 +152,8 @@ const ENTITIES = {
   testimonial: { table: testimonials, tag: TAGS.testimonials, type: "testimonial" } as SimpleEntity<TestimonialInput>,
   stat: { table: stats, tag: TAGS.stats, type: "stat" } as SimpleEntity<StatInput>,
   social: { table: socialLinks, tag: TAGS.socials, type: "social_link" } as SimpleEntity<SocialLinkInput>,
+  faq: { table: faqs, tag: TAGS.faqs, type: "faq" } as SimpleEntity<FaqInput>,
+  partner: { table: partners, tag: TAGS.partners, type: "partner" } as SimpleEntity<PartnerInput>,
 };
 
 export type SimpleEntityName = keyof typeof ENTITIES;

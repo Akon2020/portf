@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormState } from "@/server/actions/content";
-import type { JourneyItem, Service, Skill, SocialLink, Stat, Testimonial } from "@/server/db/schema";
+import type { Faq, JourneyItem, Partner, Service, Skill, SocialLink, Stat, Testimonial } from "@/server/db/schema";
 import { EntityForm } from "../entity-form";
 import { CheckboxField, LocalizedField, LocalizedListField, SelectField, TextAreaField, TextField } from "../fields";
 import {
@@ -166,6 +166,45 @@ export function SocialForm({ action, row }: { action: Action; row?: SocialLink |
             <TextField name="handle" label="Identifiant" defaultValue={row?.handle} errors={errors} />
             <TextField name="sortOrder" label="Ordre" type="number" defaultValue={row?.sortOrder ?? 0} errors={errors} />
           </div>
+          <CheckboxField name="isVisible" label="Visible sur le site" defaultChecked={row?.isVisible ?? true} />
+        </>
+      )}
+    </EntityForm>
+  );
+}
+
+export function FaqForm({ action, row }: { action: Action; row?: Faq | null }) {
+  return (
+    <EntityForm action={action}>
+      {(errors) => (
+        <>
+          <LocalizedField name="category" label="Catégorie" required defaultValue={row?.category} errors={errors} hint="Ex. Travail, Collaboration, Tarifs : les questions sont regroupées par catégorie" />
+          <LocalizedField name="question" label="Question" required defaultValue={row?.question} errors={errors} />
+          <LocalizedField name="answer" label="Réponse" required multiline rows={5} defaultValue={row?.answer} errors={errors} hint="Une ligne vide sépare les paragraphes" />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <TextField name="sortOrder" label="Ordre" type="number" defaultValue={row?.sortOrder ?? 0} errors={errors} />
+          </div>
+          <div className="space-y-3">
+            <CheckboxField name="isVisible" label="Visible sur le site" defaultChecked={row?.isVisible ?? true} />
+            <CheckboxField name="showOnHome" label="Afficher aussi sur l'accueil" hint="Les autres questions restent sur la page Contact" defaultChecked={row?.showOnHome ?? false} />
+          </div>
+        </>
+      )}
+    </EntityForm>
+  );
+}
+
+export function PartnerForm({ action, row, library }: { action: Action; row?: Partner | null; library: LibraryItem[] }) {
+  return (
+    <EntityForm action={action}>
+      {(errors) => (
+        <>
+          <div className={grid}>
+            <TextField name="name" label="Nom" required defaultValue={row?.name} errors={errors} hint="Affiché à côté du logo, ou seul sans logo" />
+            <TextField name="url" label="Site web (facultatif)" type="url" defaultValue={row?.url} errors={errors} placeholder="https://" />
+            <TextField name="sortOrder" label="Ordre" type="number" defaultValue={row?.sortOrder ?? 0} errors={errors} />
+          </div>
+          <MediaPicker name="logoMediaId" label="Logo (PNG à fond transparent conseillé, affiché en niveaux de gris)" library={library} defaultValue={row?.logoMediaId ? [row.logoMediaId] : []} />
           <CheckboxField name="isVisible" label="Visible sur le site" defaultChecked={row?.isVisible ?? true} />
         </>
       )}

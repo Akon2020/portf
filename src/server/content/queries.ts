@@ -10,6 +10,8 @@ import {
   skills,
   socialLinks,
   stats,
+  faqs,
+  partners,
   testimonials,
   type LocalizedText,
   type Media,
@@ -32,6 +34,8 @@ export const TAGS = {
   media: "content:media",
   posts: "content:posts",
   gallery: "content:gallery",
+  faqs: "content:faqs",
+  partners: "content:partners",
 } as const;
 
 const ONE_DAY = 86_400;
@@ -272,4 +276,29 @@ export const getApprovedTestimonials = unstable_cache(
   },
   ["testimonials"],
   { tags: [TAGS.testimonials, TAGS.media], revalidate: ONE_DAY },
+);
+
+export const getFaqs = unstable_cache(
+  async () =>
+    getDb()
+      .select({ id: faqs.id, category: faqs.category, question: faqs.question, answer: faqs.answer, showOnHome: faqs.showOnHome })
+      .from(faqs)
+      .where(eq(faqs.isVisible, true))
+      .orderBy(asc(faqs.sortOrder)),
+  ["faqs"],
+  { tags: [TAGS.faqs], revalidate: ONE_DAY },
+);
+
+export const getPartners = unstable_cache(
+  async () => {
+    const rows = await getDb()
+      .select({ id: partners.id, name: partners.name, url: partners.url, logoMediaId: partners.logoMediaId })
+      .from(partners)
+      .where(eq(partners.isVisible, true))
+      .orderBy(asc(partners.sortOrder));
+    const logos = await loadMediaMap(rows.map((row) => row.logoMediaId));
+    return rows.map(({ logoMediaId, ...row }) => ({ ...row, logo: logoMediaId ? (logos.get(logoMediaId) ?? null) : null }));
+  },
+  ["partners"],
+  { tags: [TAGS.partners, TAGS.media], revalidate: ONE_DAY },
 );
