@@ -108,7 +108,9 @@ export async function saveEntityAction(
   formData: FormData,
 ): Promise<FormState> {
   const actor = await currentActor();
-  const config = ENTITY_CONFIG[route];
+  const config = ENTITY_CONFIG[route] as (typeof ENTITY_CONFIG)[EntityRoute] | undefined;
+  // An outdated page or server build can send a type this version does not know.
+  if (!config) return { ok: false, message: "Type de contenu inconnu : rechargez la page puis réessayez." };
   const parsed = config.schema.safeParse(parseFormData(formData, { booleans: [...config.booleans] }));
   if (!parsed.success) return { ok: false, message: INVALID, errors: issuesToErrors(parsed.error.issues) };
   let entityId: string;
@@ -122,7 +124,9 @@ export async function saveEntityAction(
 }
 
 export async function deleteEntityAction(route: EntityRoute, id: string): Promise<void> {
-  await deleteEntity(ENTITY_CONFIG[route].entity, id, await currentActor());
+  const config = ENTITY_CONFIG[route] as (typeof ENTITY_CONFIG)[EntityRoute] | undefined;
+  if (!config) redirect("/admin/contenu");
+  await deleteEntity(config.entity, id, await currentActor());
   redirect(`/admin/contenu/${route}`);
 }
 
