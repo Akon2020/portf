@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, Search, X } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,6 +8,7 @@ import { ThemeMenu } from "@/components/theme-menu";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/server/actions/auth";
 import { CommandPalette } from "./command-palette";
+import { NotificationBell } from "./notification-bell";
 import { NAV_GROUPS, currentTitle, isActive, type NavItem } from "./nav-config";
 
 export type Counters = Partial<Record<NonNullable<NavItem["badge"]>, number>>;
@@ -235,14 +236,7 @@ export function AdminShell({ user, counters, year, children }: ShellProps) {
             <button type="button" onClick={() => setPalette(true)} aria-label="Rechercher" className="grid size-10 place-items-center rounded-xl border bg-card text-muted-foreground md:hidden">
               <Search className="size-[18px]" aria-hidden="true" />
             </button>
-            <Link
-              href="/admin/messagerie"
-              aria-label={`Messagerie${counters.messages ? `, ${counters.messages} nouveaux messages` : ""}`}
-              className="relative grid size-10 place-items-center rounded-xl border bg-card text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Bell className="size-[18px]" aria-hidden="true" />
-              {counters.messages ? <span className="absolute right-2 top-2 size-2 rounded-full bg-accent ring-2 ring-card" aria-hidden="true" /> : null}
-            </Link>
+            <NotificationBell />
             <ThemeButton />
             <a
               href="/"

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Badge } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/money";
 import { requireAdmin } from "@/server/auth/guards";
-import { ACTION_LABELS, dashboardData } from "@/server/content/dashboard";
+import { AreaChart, BarChart, Donut } from "@/components/admin/charts";
+import { actionLabel, dashboardCharts, dashboardData } from "@/server/content/dashboard";
 import { REQUEST_LABELS } from "@/server/services/quote-requests";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
@@ -32,10 +33,10 @@ function StatCard({
   tone: string;
 }) {
   return (
-    <Link href={href} className="admin-card group flex min-w-0 flex-col justify-between gap-4 p-5 transition-shadow hover:shadow-md">
+    <Link href={href} className="admin-card group flex min-w-0 flex-col justify-between gap-3 p-4 transition-shadow hover:shadow-md sm:gap-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <span className={`grid size-10 place-items-center rounded-xl ${tone}`}>
+        <span className={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-10 ${tone}`}>
           <Icon className="size-[18px]" aria-hidden="true" />
         </span>
       </div>
@@ -68,7 +69,25 @@ function Panel({ title, href, linkLabel, children }: { title: string; href?: str
 
 export default async function DashboardPage() {
   const { user } = await requireAdmin();
-  const data = await dashboardData(user.id);
+  const [data, charts] = await Promise.all([dashboardData(user.id), dashboardCharts()]);
+  const dayTick = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+  const monthTick = new Intl.DateTimeFormat("fr-FR", { month: "short", timeZone: "UTC" });
+  const monthLong = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+  const visits = charts.visits.map((row, index) => ({
+    label: row.day,
+    tick: index % 7 === 0 || index === charts.visits.length - 1 ? dayTick.format(new Date(`${row.day}T12:00:00Z`)) : "",
+    value: row.views,
+  }));
+  const totalVisits = charts.visits.reduce((sum, row) => sum + row.views, 0);
+  const currencies = (["USD", "CDF"] as const).filter((currency) => charts.revenue.some((row) => row.currency === currency && row.amount > 0));
+  const revenueCurrencies = currencies.length ? currencies : (["USD"] as const);
+  const STATUS_FR: Record<string, string> = {
+    draft: "Brouillon", sent: "Envoyé", viewed: "Consulté", accepted: "Accepté", declined: "Refusé", expired: "Expiré", negotiating: "En négociation", revised: "Révisé",
+    partially_paid: "Partiel", paid: "Payée", overdue: "En retard", cancelled: "Annulée",
+    new: "Nouvelle", reviewing: "En analyse", quoted: "Devis envoyé", won: "Gagnée", lost: "Perdue",
+    todo: "À faire", in_progress: "En cours", blocked: "Bloquée", done: "Terminée",
+  };
+  const segments = (rows: { status: string; count: number }[]) => rows.map((row) => ({ label: STATUS_FR[row.status] ?? row.status, value: row.count })).sort((a, b) => b.value - a.value);
   const now = new Date();
   const hour = Number(hourFormat.format(now));
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
@@ -99,7 +118,7 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Messages à traiter"
           value={data.totals.open_messages}
@@ -132,6 +151,49 @@ export default async function DashboardPage() {
           icon={ListChecks}
           tone="bg-warning/10 text-warning"
         />
+      </div>
+
+      <div className="grid gap-4 *:min-w-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Panel title="Visites des 30 derniers jours" href="/admin/monitoring" linkLabel="Audience">
+          <p className="-mt-2 mb-3 text-sm text-muted-foreground">{totalVisits.toLocaleString("fr-FR")} pages vues</p>
+          <AreaChart points={visits} caption="Pages vues par jour sur les 30 derniers jours" />
+        </Panel>
+        <Panel title="Encaissements sur 12 mois" href="/admin/facturation/rapports" linkLabel="Rapports">
+          <div className="space-y-5">
+            {revenueCurrencies.map((currency) => (
+              <div key={currency}>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">{currency}</p>
+                <BarChart
+                  caption={`Encaissements mensuels en ${currency}`}
+                  format={(value) => formatMoney(value, currency)}
+                  tone={currency === "USD" ? "bg-success/80" : "bg-info/80"}
+                  points={charts.revenue
+                    .filter((row) => row.currency === currency)
+                    .map((row, index) => ({
+                      label: monthLong.format(new Date(`${row.month}-15T12:00:00Z`)),
+                      tick: index % 2 === 0 ? monthTick.format(new Date(`${row.month}-15T12:00:00Z`)) : "",
+                      value: row.amount,
+                    }))}
+                />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 *:min-w-0 md:grid-cols-2 2xl:grid-cols-4">
+        <Panel title="Demandes de devis" href="/admin/devis">
+          <Donut segments={segments(charts.requestStatuses)} caption="Demandes de devis par statut" centerLabel="demandes" />
+        </Panel>
+        <Panel title="Devis émis" href="/admin/devis/emis">
+          <Donut segments={segments(charts.quoteStatuses)} caption="Devis émis par statut" centerLabel="devis" />
+        </Panel>
+        <Panel title="Factures" href="/admin/facturation">
+          <Donut segments={segments(charts.invoiceStatuses)} caption="Factures par statut" centerLabel="factures" />
+        </Panel>
+        <Panel title="Tâches" href="/admin/taches">
+          <Donut segments={segments(charts.taskStatuses)} caption="Tâches par statut" centerLabel="tâches" />
+        </Panel>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -172,7 +234,7 @@ export default async function DashboardPage() {
                 <li key={entry.id} className="flex gap-3">
                   <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
                   <span className="min-w-0 flex-1 text-sm">
-                    <span className="block">{ACTION_LABELS[entry.action] ?? entry.action}</span>
+                    <span className="block">{actionLabel(entry.action)}</span>
                     <span className="block text-xs text-muted-foreground">
                       {entry.actor ?? "Visiteur ou système"} · {dateTime.format(entry.at)}
                     </span>

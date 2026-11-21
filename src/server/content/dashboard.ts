@@ -100,3 +100,97 @@ export const ACTION_LABELS: Record<string, string> = {
   "quote.declined": "Devis refusé par le client",
   "quote.converted": "Devis converti en client",
 };
+
+/** Series for the dashboard charts: last 30 days of visits, 12 months of revenue, pipelines by status. */
+export async function dashboardCharts() {
+  const db = getDb();
+  const [visits, revenue, quoteStatuses, invoiceStatuses, requestStatuses, taskStatuses] = await Promise.all([
+    db.execute<{ day: string; views: number; visitors: number }>(sql`
+      with days as (
+        select generate_series(((now() at time zone 'Africa/Lubumbashi')::date - 29), (now() at time zone 'Africa/Lubumbashi')::date, interval '1 day')::date as day
+      )
+      select to_char(days.day, 'YYYY-MM-DD') as day, count(pv.id)::int as views, count(distinct pv.visitor_hash)::int as visitors
+      from days left join page_views pv on (pv.created_at at time zone 'Africa/Lubumbashi')::date = days.day
+      group by days.day order by days.day
+    `),
+    db.execute<{ month: string; currency: "USD" | "CDF"; amount: number }>(sql`
+      with months as (
+        select to_char(generate_series(date_trunc('month', now()) - interval '11 months', date_trunc('month', now()), interval '1 month'), 'YYYY-MM') as month
+      )
+      select months.month, c.currency, coalesce(sum(p.amount), 0)::int as amount
+      from months cross join (values ('USD'), ('CDF')) as c(currency)
+      left join payments p on to_char(p.paid_at, 'YYYY-MM') = months.month and p.currency::text = c.currency
+      group by months.month, c.currency order by months.month
+    `),
+    db.execute<{ status: string; count: number }>(sql`select status::text, count(*)::int as count from quotes where deleted_at is null group by status`),
+    db.execute<{ status: string; count: number }>(sql`select status::text, count(*)::int as count from invoices where deleted_at is null group by status`),
+    db.execute<{ status: string; count: number }>(sql`select status::text, count(*)::int as count from quote_requests group by status`),
+    db.execute<{ status: string; count: number }>(sql`select status::text, count(*)::int as count from tasks where deleted_at is null group by status`),
+  ]);
+  return {
+    visits: [...visits],
+    revenue: [...revenue],
+    quoteStatuses: [...quoteStatuses],
+    invoiceStatuses: [...invoiceStatuses],
+    requestStatuses: [...requestStatuses],
+    taskStatuses: [...taskStatuses],
+  };
+}
+
+const ENTITY_LABELS: Record<string, string> = {
+  testimonial: "Témoignage",
+  journey: "Parcours",
+  skill: "Compétence",
+  service: "Service",
+  stat: "Chiffre clé",
+  social: "Réseau social",
+  project: "Projet",
+  post: "Article",
+  album: "Album",
+  media: "Média",
+  client: "Client",
+  client_project: "Projet client",
+  milestone: "Jalon",
+  invoice: "Facture",
+  receipt: "Reçu",
+  quote: "Devis",
+  quote_request: "Demande de devis",
+  task: "Tâche",
+  contact: "Contact",
+  conversation: "Conversation",
+  security: "Sécurité",
+  portal: "Espace client",
+  settings: "Paramètres",
+  auth: "Connexion",
+};
+
+const VERB_LABELS: Record<string, string> = {
+  create: "création",
+  update: "modification",
+  delete: "suppression",
+  duplicate: "duplication",
+  status: "changement de statut",
+  payment: "paiement enregistré",
+  sent_email: "envoi par e-mail",
+  sent_whatsapp: "envoi par WhatsApp",
+  reminder_email: "relance par e-mail",
+  reminder_whatsapp: "relance par WhatsApp",
+  cancelled: "annulation",
+  negotiation: "proposition du client",
+  negotiation_reply: "réponse à la négociation",
+  revision: "nouvelle version",
+  balance: "facture de solde",
+  ban: "bannissement",
+  unban: "levée de bannissement",
+  allow: "ajout à la liste blanche",
+  login: "connexion",
+};
+
+/** Readable label of any audit action, for example "Témoignage : modification". */
+export function actionLabel(action: string): string {
+  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const [entity, ...rest] = action.split(".");
+  const verb = rest.join(".");
+  const entityLabel = ENTITY_LABELS[entity] ?? entity;
+  return verb ? `${entityLabel} : ${VERB_LABELS[verb] ?? verb.replace(/_/g, " ")}` : entityLabel;
+}

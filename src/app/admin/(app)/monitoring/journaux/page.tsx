@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { requireAdmin } from "@/server/auth/guards";
-import { ACTION_LABELS } from "@/server/content/dashboard";
+import { actionLabel } from "@/server/content/dashboard";
 import { journal } from "@/server/services/monitoring";
 
 export const metadata: Metadata = { title: "Journaux" };
@@ -90,7 +90,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                 <tr key={log.id}>
                   <td className="whitespace-nowrap text-xs text-muted-foreground">{dateTime.format(log.createdAt)}</td>
                   <td className="text-xs">
-                    {ACTION_LABELS[log.action] ?? log.action}
+                    {actionLabel(log.action)}
                     <span className="ml-2 font-mono text-[11px] text-muted-foreground">{log.entityType}</span>
                   </td>
                   <td className="text-xs">{actor ?? "Visiteur ou système"}</td>
