@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/public/site-footer";
 import { Tracker } from "@/components/public/tracker";
+import { ThemeSync } from "@/components/theme-sync";
 import { TRAP_PATH } from "@/monitoring/rules";
 import { SiteHeader } from "@/components/public/site-header";
 import { THEME_SCRIPT } from "@/lib/theme-script";
@@ -12,6 +13,7 @@ import { fontVariables } from "@/lib/fonts";
 import { tr } from "@/lib/localized";
 import { getSiteUrl } from "@/lib/site";
 import { getSetting } from "@/server/content/queries";
+import { getViewer } from "@/server/services/viewer";
 import "../globals.css";
 
 // Content comes from the database at request time (cached by tags), so the
@@ -50,7 +52,7 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
-  const profile = await getSetting("profile");
+  const [profile, viewer] = await Promise.all([getSetting("profile"), getViewer()]);
 
   return (
     <html lang={locale} className={fontVariables} suppressHydrationWarning>
@@ -58,8 +60,9 @@ export default async function LocaleLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">
+        <ThemeSync />
         <NextIntlClientProvider>
-          <SiteHeader name={profile.name} />
+          <SiteHeader name={profile.name} viewer={viewer} />
           <main id="contenu" tabIndex={-1} className="outline-none">
             {children}
           </main>
