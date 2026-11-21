@@ -44,7 +44,12 @@ jobs:
             --exclude 'tmp/' --exclude '.env*' --exclude 'stderr.log' \
             -e "$SSH" release/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.APP_DIR }}/"
 
+      # NODE_BIN (optional secret): the Node binary of "Setup Node.js App", for example
+      # /home/user/nodevenv/portfolio/22/bin/node, when node is not on the SSH PATH.
       - name: Migrate, check and restart
+        env:
+          NODE_BIN: ${{ secrets.NODE_BIN }}
         run: |
+          NODE="${NODE_BIN:-node}"
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "cd '${{ secrets.APP_DIR }}' && node dist/migrate.js && node dist/cron.js healthcheck && mkdir -p tmp && touch tmp/restart.txt"
+            "cd '${{ secrets.APP_DIR }}' && $NODE dist/migrate.js && $NODE dist/cron.js healthcheck && mkdir -p tmp && touch tmp/restart.txt"

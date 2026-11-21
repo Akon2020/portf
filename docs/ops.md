@@ -81,6 +81,7 @@ Secrets GitHub à créer (Settings, Secrets and variables, Actions, environnemen
 | `SSH_PRIVATE_KEY` | clé privée dédiée au déploiement (sans phrase de passe), clé publique ajoutée dans cPanel, « SSH Access » |
 | `SSH_KNOWN_HOSTS` | sortie de `ssh-keyscan -p 22 serveur.hebergeur.com` |
 | `APP_DIR` | `/home/<utilisateur>/portfolio` |
+| `NODE_BIN` (facultatif) | `/home/<utilisateur>/nodevenv/portfolio/22/bin/node`, si `node` n'est pas trouvé en SSH |
 
 Construire la release en local pour inspection :
 
