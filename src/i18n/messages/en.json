@@ -17,7 +17,9 @@
     "blog": "Blog",
     "gallery": "Gallery",
     "portal": "Client area",
-    "quoteCta": "Request a quote"
+    "quoteCta": "Request a quote",
+    "workWithMe": "Work with me",
+    "adminSpace": "Admin space"
   },
   "theme": {
     "toggle": "Change theme",
@@ -36,7 +38,8 @@
     "ctaSecondary": "See my projects",
     "basedIn": "Based in",
     "since": "Since",
-    "portraitAlt": "Portrait of Isaac Akonkwa"
+    "portraitAlt": "Portrait of Isaac Akonkwa",
+    "workWithMe": "Work with me"
   },
   "sections": {
     "profile": "Profile",
@@ -47,7 +50,8 @@
     "testimonials": "Testimonials",
     "contact": "Contact",
     "blog": "Blog",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "faq": "FAQ"
   },
   "home": {
     "trustLabel": "Organizations and communities",
@@ -64,7 +68,9 @@
     "blogTitle": "Field notes on code, security and product.",
     "blogAll": "All articles",
     "galleryTitle": "Workshops, talks and community moments.",
-    "galleryAll": "See the gallery"
+    "galleryAll": "See the gallery",
+    "faqTitle": "Answers to the questions I hear the most.",
+    "faqAll": "All questions"
   },
   "journey": {
     "filterLabel": "Filter the journey",
@@ -186,7 +192,15 @@
     "socials": "Social",
     "formSoon": "The contact form is coming very soon. In the meantime, write to me directly by email or on WhatsApp.",
     "writeMe": "Write to me",
-    "whatsappMessage": "Hello Isaac, I am reaching out from your website."
+    "whatsappMessage": "Hello Isaac, I am reaching out from your website.",
+    "label": "Work with me",
+    "faqLabel": "FAQ",
+    "faqTitle": "Before you write",
+    "faqIntro": "Answers to the questions I am asked most often. Cannot find yours? Write to me directly.",
+    "quoteTitle": "A well defined project?",
+    "quoteText": "The quote form gives me everything I need to reply with a priced proposal.",
+    "quoteCta": "Request a quote",
+    "formTitle": "Send a message"
   },
   "about": {
     "title": "About",

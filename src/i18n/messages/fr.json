@@ -17,7 +17,9 @@
     "blog": "Blog",
     "gallery": "Galerie",
     "portal": "Espace client",
-    "quoteCta": "Demander un devis"
+    "quoteCta": "Demander un devis",
+    "workWithMe": "Travaillons ensemble",
+    "adminSpace": "Espace administration"
   },
   "theme": {
     "toggle": "Changer de thème",
@@ -36,7 +38,8 @@
     "ctaSecondary": "Voir mes projets",
     "basedIn": "Basé à",
     "since": "Depuis",
-    "portraitAlt": "Portrait d’Isaac Akonkwa"
+    "portraitAlt": "Portrait d’Isaac Akonkwa",
+    "workWithMe": "Travaillons ensemble"
   },
   "sections": {
     "profile": "Profil",
@@ -47,7 +50,8 @@
     "testimonials": "Témoignages",
     "contact": "Contact",
     "blog": "Blog",
-    "gallery": "Galerie"
+    "gallery": "Galerie",
+    "faq": "Questions fréquentes"
   },
   "home": {
     "trustLabel": "Organisations et communautés",
@@ -64,7 +68,9 @@
     "blogTitle": "Notes de terrain sur le code, la sécurité et le produit.",
     "blogAll": "Tous les articles",
     "galleryTitle": "Ateliers, conférences et moments de communauté.",
-    "galleryAll": "Voir la galerie"
+    "galleryAll": "Voir la galerie",
+    "faqTitle": "Les réponses aux questions qu'on me pose le plus.",
+    "faqAll": "Toutes les questions"
   },
   "journey": {
     "filterLabel": "Filtrer le parcours",
@@ -179,14 +185,22 @@
   },
   "contact": {
     "title": "Contact",
-    "intro": "Un projet, une collaboration, un poste ou une question : écrivez-moi.",
+    "intro": "Un projet, une collaboration, un poste ou une question : écrivez-moi.",
     "email": "E-mail",
     "whatsapp": "WhatsApp",
     "calendly": "Prendre rendez-vous",
     "socials": "Réseaux",
     "formSoon": "Le formulaire de contact arrive très bientôt. En attendant, écrivez-moi directement par e-mail ou sur WhatsApp.",
     "writeMe": "M’écrire",
-    "whatsappMessage": "Bonjour Isaac, je vous contacte depuis votre site."
+    "whatsappMessage": "Bonjour Isaac, je vous contacte depuis votre site.",
+    "label": "Travaillons ensemble",
+    "faqLabel": "Questions fréquentes",
+    "faqTitle": "Avant de m'écrire",
+    "faqIntro": "Les réponses aux questions qu'on me pose le plus souvent. Vous ne trouvez pas la vôtre ? Écrivez-moi directement.",
+    "quoteTitle": "Un projet bien défini ?",
+    "quoteText": "Le formulaire de devis me donne tout ce qu'il faut pour vous répondre avec une proposition chiffrée.",
+    "quoteCta": "Demander un devis",
+    "formTitle": "Envoyer un message"
   },
   "about": {
     "title": "À propos",

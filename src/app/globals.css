@@ -326,3 +326,17 @@
 .admin-table tbody td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .admin-table tbody tr:last-child td { border-bottom: 0; }
 .admin-table tbody tr:hover td { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+
+/* Hero portrait fading into the page (phones: bottom fade, large screens: soft oval). */
+.hero-portrait {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 96%), linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 96%), linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+@media (min-width: 1024px) {
+  .hero-portrait {
+    -webkit-mask-image: radial-gradient(ellipse 56% 56% at 50% 46%, #000 60%, transparent 100%);
+    mask-image: radial-gradient(ellipse 56% 56% at 50% 46%, #000 60%, transparent 100%);
+  }
+}
