@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowRight, Menu, UserRound, X } from "lucide-react";
+import { ArrowRight, Menu, Send, UserRound, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import NextLink from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ThemeMenu } from "@/components/theme-menu";
+import { Avatar } from "@/components/ui/avatar";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,29 @@ function LocaleSwitch() {
   );
 }
 
+export type HeaderViewer = { kind: "admin" | "client"; name: string; avatarUrl: string | null } | null;
+
+/** Signed in: avatar to the right space. Visitors: link to the client portal. */
+function AccountLink({ viewer, className, onClick, full }: { viewer: HeaderViewer; className?: string; onClick?: () => void; full?: boolean }) {
+  const t = useTranslations("nav");
+  if (viewer) {
+    const href = viewer.kind === "admin" ? "/admin" : "/espace-client";
+    const label = viewer.kind === "admin" ? t("adminSpace") : t("portal");
+    return (
+      <NextLink href={href} onClick={onClick} title={`${viewer.name}, ${label}`} className={cn("inline-flex items-center gap-2.5 rounded-full", full && "h-12 justify-center border px-4 text-sm font-medium", className)}>
+        <Avatar name={viewer.name} src={viewer.avatarUrl} className="size-8" />
+        <span className={full ? "" : "sr-only"}>{full ? label : `${viewer.name}, ${label}`}</span>
+      </NextLink>
+    );
+  }
+  return (
+    <NextLink href="/espace-client" onClick={onClick} className={cn("items-center gap-1.5 rounded-full border text-sm", full ? "flex h-12 justify-center font-medium" : "h-9 px-3 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground", className)}>
+      <UserRound className="size-4" aria-hidden="true" />
+      {t("portal")}
+    </NextLink>
+  );
+}
+
 function Logo({ name, onClick, label }: { name: string; onClick?: () => void; label: string }) {
   const [first, ...rest] = name.split(" ");
   return (
@@ -61,7 +85,7 @@ function Logo({ name, onClick, label }: { name: string; onClick?: () => void; la
 }
 
 /** Full screen menu for phones and tablets, rendered in a portal above the page. */
-function MobileMenu({ name, onClose }: { name: string; onClose: () => void }) {
+function MobileMenu({ name, viewer, onClose }: { name: string; viewer: HeaderViewer; onClose: () => void }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const panel = useRef<HTMLDivElement>(null);
@@ -123,21 +147,24 @@ function MobileMenu({ name, onClose }: { name: string; onClose: () => void }) {
         </ul>
       </nav>
       <div className="container-site shrink-0 space-y-3 border-t py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        <Link href="/devis" onClick={onClose} className="flex h-12 items-center justify-center gap-2 rounded-full bg-accent text-sm font-semibold text-accent-foreground">
-          {t("quoteCta")}
-          <ArrowRight className="size-4" aria-hidden="true" />
+        <Link href="/contact" onClick={onClose} className="flex h-12 items-center justify-center gap-2 rounded-full bg-accent text-sm font-semibold text-accent-foreground">
+          {t("workWithMe")}
+          <Send className="size-4" aria-hidden="true" />
         </Link>
-        <NextLink href="/espace-client" className="flex h-12 items-center justify-center gap-2 rounded-full border text-sm font-medium">
-          <UserRound className="size-4" aria-hidden="true" />
-          {t("portal")}
-        </NextLink>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/devis" onClick={onClose} className="flex h-12 items-center justify-center gap-2 rounded-full border text-sm font-medium">
+            {t("quoteCta")}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+          <AccountLink viewer={viewer} onClick={onClose} full />
+        </div>
       </div>
     </div>,
     document.body,
   );
 }
 
-export function SiteHeader({ name }: { name: string }) {
+export function SiteHeader({ name, viewer = null }: { name: string; viewer?: HeaderViewer }) {
   const t = useTranslations("nav");
   const theme = useTranslations("theme");
   const pathname = usePathname();
@@ -177,13 +204,15 @@ export function SiteHeader({ name }: { name: string }) {
         </nav>
 
         <div className="flex items-center gap-2">
-          <NextLink
-            href="/espace-client"
-            className="hidden h-9 items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground lg:inline-flex"
+          <Link
+            href="/contact"
+            data-track="cta_click"
+            data-track-label="work_with_me_header"
+            className="hidden h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-accent-foreground transition-transform hover:-translate-y-0.5 md:inline-flex"
           >
-            <UserRound className="size-4" aria-hidden="true" />
-            {t("portal")}
-          </NextLink>
+            {t("workWithMe")}
+          </Link>
+          <AccountLink viewer={viewer} className={viewer ? "" : "hidden lg:inline-flex"} />
           <ThemeMenu labels={{ button: theme("toggle"), light: theme("light"), dark: theme("dark"), system: theme("system") }} />
           <LocaleSwitch />
           <button
@@ -199,7 +228,7 @@ export function SiteHeader({ name }: { name: string }) {
           </button>
         </div>
       </div>
-      {open && <MobileMenu name={name} onClose={() => setOpen(false)} />}
+      {open && <MobileMenu name={name} viewer={viewer} onClose={() => setOpen(false)} />}
     </header>
   );
 }

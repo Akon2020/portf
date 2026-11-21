@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ThemeMenu } from "@/components/theme-menu";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/server/actions/auth";
 import { CommandPalette } from "./command-palette";
@@ -14,22 +15,13 @@ import { NAV_GROUPS, currentTitle, isActive, type NavItem } from "./nav-config";
 export type Counters = Partial<Record<NonNullable<NavItem["badge"]>, number>>;
 
 interface ShellProps {
-  user: { name: string; email: string };
+  user: { name: string; email: string; avatarUrl?: string | null };
   year: number;
   counters: Counters;
   children: React.ReactNode;
 }
 
 const COLLAPSE_KEY = "admin-sidebar-collapsed";
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 function Logo({ compact }: { compact?: boolean }) {
   return (
@@ -103,9 +95,7 @@ function NavLinks({ counters, compact, onNavigate }: { counters: Counters; compa
 function UserCard({ user, compact }: { user: ShellProps["user"]; compact?: boolean }) {
   return (
     <div className={cn("flex items-center gap-3 rounded-xl border bg-surface/60 p-2.5", compact && "flex-col p-2")}>
-      <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-        {initials(user.name)}
-      </span>
+      <Avatar name={user.name} src={user.avatarUrl} className="ring-offset-card" />
       {!compact && (
         <span className="min-w-0 flex-1 leading-tight">
           <span className="block truncate text-sm font-medium">{user.name}</span>
