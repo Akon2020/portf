@@ -82,6 +82,22 @@ export const ENTITY_VIEWS: Record<EntityRoute, EntityView> = {
     secondary: (row) => String(row.url),
     badges: visible,
   },
+  faq: {
+    title: "Questions fréquentes",
+    singular: "Question",
+    description: "Affichées sur la page Contact, et sur l'accueil pour celles qui sont cochées.",
+    primary: (row) => L(row.question),
+    secondary: (row) => L(row.category),
+    badges: (row) => [...visible(row), ...(row.showOnHome ? [{ label: "Accueil", tone: "info" as Tone }] : [])],
+  },
+  partenaires: {
+    title: "Bandeau de confiance",
+    singular: "Organisation",
+    description: "Organisations affichées sous le hero : nom, site web et logo.",
+    primary: (row) => String(row.name),
+    secondary: (row) => (row.url ? String(row.url) : "Sans site web"),
+    badges: (row) => [...visible(row), ...(row.logoMediaId ? [] : [{ label: "Sans logo", tone: "neutral" as Tone }])],
+  },
 };
 
 export const ENTITY_ROUTES = Object.keys(ENTITY_VIEWS) as EntityRoute[];

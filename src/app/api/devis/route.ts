@@ -60,7 +60,11 @@ export async function POST(request: Request) {
   }
 
   const limit = await consumeRateLimit(`quote:ip:${ip}`, RATE_LIMITS.contactForm);
-  if (!limit.allowed) return NextResponse.json({ errors: { form: "rateLimited" } }, { status: 429 });
+  if (!limit.allowed) {
+    const { recordAppSignal } = await import("@/monitoring/record");
+    await recordAppSignal({ ip, method: "POST", path: "/api/devis", query: "", userAgent: request.headers.get("user-agent") }, { ruleId: "form.quote-flood", category: "rate_abuse", severity: "medium", score: 15 });
+    return NextResponse.json({ errors: { form: "rateLimited" } }, { status: 429 });
+  }
 
   let attachments;
   try {
@@ -71,5 +75,7 @@ export async function POST(request: Request) {
   }
 
   await submitQuoteRequest(parsed.data, attachments, locale, meta);
+  const [{ trackInBackground }, { visitorHash }] = await Promise.all([import("@/monitoring/transport"), import("@/monitoring/record")]);
+  trackInBackground({ type: "analytics_event", data: { name: "quote_submit", props: { type: String(parsed.data.projectType).slice(0, 40) }, path: "/devis", visitorHash: visitorHash(ip, meta.userAgent ?? "") } });
   return NextResponse.json({ ok: true });
 }

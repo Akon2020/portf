@@ -62,6 +62,8 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
             <a
               href={cvFile.url}
               download
+              data-track="cv_download"
+              data-track-label={locale}
               className="mt-10 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground"
             >
               <Download className="size-4" aria-hidden="true" />

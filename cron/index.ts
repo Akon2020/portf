@@ -11,7 +11,13 @@ import { createAdmin } from "../src/server/cli/create-admin";
 import { healthcheck } from "../src/server/cli/healthcheck";
 import { registerJobHandlers } from "../src/server/jobs/handlers";
 import { runDueJobs } from "../src/server/jobs/runner";
+import { syncBans } from "../src/monitoring/ban-sync";
+import { aggregateDay, purgeMonitoring, yesterdayLocal } from "../src/monitoring/maintenance";
+import { markOverdueInvoices } from "../src/server/services/invoices";
+import { generateVapidKeys } from "../src/server/services/push";
 import { expireQuotes } from "../src/server/services/quotes";
+import { sendDailyDigest } from "../src/server/services/tasks";
+import { purgeNotifications } from "../src/server/services/notifications";
 
 loadEnvConfig(process.cwd());
 registerJobHandlers();
@@ -25,12 +31,17 @@ const tasks: Record<string, { task: Task; tracked: boolean }> = {
     tracked: true,
     task: async () => {
       const result = await runDueJobs();
-      return { processed: result.processed, code: 0 };
+      // Upstream ban synchronization rides on the 5 minute cron when enabled.
+      const synced = process.env.BAN_SYNC && process.env.BAN_SYNC !== "none" ? await syncBans().catch((error) => {
+        console.error(error instanceof Error ? error.message : error);
+        return 0;
+      }) : 0;
+      return { processed: result.processed + synced, code: 0 };
     },
   },
   nightly: {
     tracked: true,
-    task: async () => {
+    task: async (args) => {
       const db = getDb();
       const rateLimits = await purgeExpiredRateLimits();
       const oldSessions = await db
@@ -42,7 +53,27 @@ const tasks: Record<string, { task: Task; tracked: boolean }> = {
         .where(sql`${authTokens.expiresAt} < now() - interval '7 days'`)
         .returning({ id: authTokens.id });
       const expiredQuotes = await expireQuotes();
-      return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes };
+      const overdueInvoices = await markOverdueInvoices();
+      const aggregated = await aggregateDay(args[0] && /^d{4}-d{2}-d{2}$/.test(args[0]) ? args[0] : yesterdayLocal());
+      const purged = (await purgeMonitoring()) + (await purgeNotifications());
+      return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes + overdueInvoices + aggregated + purged };
+    },
+  },
+  "sync-bans": {
+    tracked: true,
+    task: async () => ({ processed: await syncBans(), code: 0 }),
+  },
+  "daily-digest": {
+    tracked: true,
+    task: async () => ({ processed: await sendDailyDigest(), code: 0 }),
+  },
+  "vapid-keys": {
+    tracked: false,
+    task: async () => {
+      const keys = generateVapidKeys();
+      console.log(`VAPID_PUBLIC_KEY=${keys.publicKey}
+VAPID_PRIVATE_KEY=${keys.privateKey}`);
+      return { code: 0 };
     },
   },
 };

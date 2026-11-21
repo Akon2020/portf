@@ -187,3 +187,113 @@ export function SecurityEmail({
     </EmailLayout>
   );
 }
+
+/** Invoice, receipt or reminder: a short text, a button to the private document page. */
+export function DocumentEmail({
+  preview,
+  greeting,
+  paragraphs,
+  cta,
+  url,
+  help,
+  locale,
+  message,
+}: {
+  preview: string;
+  greeting: string;
+  paragraphs: string[];
+  cta: string;
+  url: string;
+  help: string;
+  locale: Locale;
+  message?: string;
+}) {
+  return (
+    <EmailLayout preview={preview} locale={locale}>
+      <Text style={paragraph}>{greeting}</Text>
+      {message ? <Text style={{ ...paragraph, whiteSpace: "pre-line" }}>{message}</Text> : null}
+      {paragraphs.map((line) => (
+        <Text key={line} style={paragraph}>
+          {line}
+        </Text>
+      ))}
+      <Section style={{ margin: "8px 0 18px" }}>
+        <Button href={url} style={button}>
+          {cta}
+        </Button>
+      </Section>
+      <Text style={muted}>{help}</Text>
+      <Text style={paragraph}>Isaac Akonkwa</Text>
+    </EmailLayout>
+  );
+}
+
+/** Magic link of the client portal. */
+export function MagicLinkEmail({ name, url, locale }: { name: string; url: string; locale: Locale }) {
+  const fr = locale === "fr";
+  return (
+    <EmailLayout preview={fr ? "Votre lien de connexion" : "Your sign-in link"} locale={locale}>
+      <Text style={paragraph}>{fr ? `Bonjour ${name},` : `Hello ${name},`}</Text>
+      <Text style={paragraph}>
+        {fr
+          ? "Voici votre lien pour accéder à votre espace client. Il est valable 15 minutes et ne peut servir qu'une fois."
+          : "Here is your link to open your client space. It is valid for 15 minutes and can only be used once."}
+      </Text>
+      <Section style={{ margin: "8px 0 18px" }}>
+        <Button href={url} style={button}>
+          {fr ? "Accéder à mon espace" : "Open my client space"}
+        </Button>
+      </Section>
+      <Text style={muted}>
+        {fr
+          ? "Si vous n'avez pas demandé ce lien, ignorez simplement ce message : personne ne pourra se connecter sans lui."
+          : "If you did not ask for this link, simply ignore this message: nobody can sign in without it."}
+      </Text>
+    </EmailLayout>
+  );
+}
+
+export function TaskReminderEmail({ title, when, description, url }: { title: string; when: string; description: string; url: string }) {
+  return (
+    <EmailLayout preview={`Rappel : ${title}`} footer="Rappel automatique de l'administration">
+      <Heading as="h1" style={{ fontSize: 20, margin: "0 0 12px" }}>
+        {title}
+      </Heading>
+      {when ? <Text style={paragraph}>Prévu {when}.</Text> : null}
+      {description ? <Text style={{ ...paragraph, whiteSpace: "pre-line" }}>{description}</Text> : null}
+      <Section style={{ marginTop: 12 }}>
+        <Button href={url} style={button}>
+          Ouvrir la tâche
+        </Button>
+      </Section>
+    </EmailLayout>
+  );
+}
+
+export function DigestEmail({ date, sections, url }: { date: string; sections: { title: string; items: string[] }[]; url: string }) {
+  return (
+    <EmailLayout preview={`Votre journée du ${date}`} footer="Récapitulatif quotidien de l'administration">
+      <Heading as="h1" style={{ fontSize: 20, margin: "0 0 4px" }}>
+        Votre journée
+      </Heading>
+      <Text style={{ ...muted, marginTop: 0 }}>{date}</Text>
+      {sections.map((section) => (
+        <Section key={section.title} style={{ marginTop: 16 }}>
+          <Text style={{ ...paragraph, fontWeight: 600, marginBottom: 6 }}>
+            {section.title} ({section.items.length})
+          </Text>
+          {section.items.map((item) => (
+            <Text key={item} style={{ ...paragraph, fontSize: 14, margin: "2px 0" }}>
+              · {item}
+            </Text>
+          ))}
+        </Section>
+      ))}
+      <Section style={{ marginTop: 20 }}>
+        <Button href={url} style={button}>
+          Ouvrir les tâches
+        </Button>
+      </Section>
+    </EmailLayout>
+  );
+}

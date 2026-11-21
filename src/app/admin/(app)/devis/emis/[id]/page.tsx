@@ -4,13 +4,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
-import { QuoteEditor, QuoteSendPanel } from "@/components/admin/quote-editor";
-import { ActionButton, Badge, ConfirmButton } from "@/components/admin/ui";
+import { NegotiationReply, QuoteEditor, QuoteSendPanel } from "@/components/admin/quote-editor";
+import { Badge, ConfirmButton } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/money";
 import {
   convertQuoteAction,
   deleteQuoteAction,
   duplicateQuoteAction,
+  replyNegotiationAction,
+  reviseQuoteAction,
   saveQuoteAction,
   sendQuoteEmailAction,
   whatsappQuoteAction,
@@ -19,6 +21,9 @@ import { requireAdmin } from "@/server/auth/guards";
 import { getDb } from "@/server/db";
 import { documentSends } from "@/server/db/schema";
 import { getQuote, publicQuoteUrl } from "@/server/services/quotes";
+import { OPEN_QUOTE_STATUSES, latestRevision, negotiationThread } from "@/server/services/negotiation";
+import { quotes } from "@/server/db/schema";
+import { and, isNull } from "drizzle-orm";
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_TONES } from "../labels";
 
 export const metadata: Metadata = { title: "Devis" };
@@ -40,7 +45,86 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const { quote, items } = data;
   const sends = await getDb().select().from(documentSends).where(eq(documentSends.documentId, id));
   const isDraft = quote.status === "draft";
-  const closed = ["accepted", "declined", "expired"].includes(quote.status);
+  const closed = ["accepted", "declined", "expired", "revised"].includes(quote.status);
+  const [thread, revision, [parent], drafts] = await Promise.all([
+    negotiationThread(quote),
+    quote.status === "revised" ? latestRevision(quote.id) : Promise.resolve(null),
+    quote.parentQuoteId ? getDb().select({ id: quotes.id, number: quotes.number }).from(quotes).where(eq(quotes.id, quote.parentQuoteId)).limit(1) : Promise.resolve([]),
+    getDb().select({ id: quotes.id }).from(quotes).where(and(eq(quotes.parentQuoteId, quote.id), eq(quotes.status, "draft"), isNull(quotes.deletedAt))).limit(1),
+  ]);
+  const stamp = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Lubumbashi" });
+  const negotiation = (
+    <>
+      {(parent || revision) && (
+        <p className="admin-card p-4 text-sm">
+          {parent && (
+            <>
+              Révision {quote.revision} du devis{" "}
+              <Link href={`/admin/devis/emis/${parent.id}`} className="font-mono text-accent hover:underline">
+                {parent.number}
+              </Link>
+              .{" "}
+            </>
+          )}
+          {revision && (
+            <>
+              Remplacé par{" "}
+              <Link href={`/admin/devis/emis/${revision.id}`} className="font-mono text-accent hover:underline">
+                {revision.number}
+              </Link>
+              .
+            </>
+          )}
+        </p>
+      )}
+      {(thread.length > 0 || OPEN_QUOTE_STATUSES.includes(quote.status)) && !isDraft && (
+        <section className={`space-y-4 admin-card p-5 ${quote.status === "negotiating" ? "border-warning/50" : ""}`}>
+          <h2 className="text-base font-semibold">Négociation</h2>
+          {thread.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Le client peut proposer un autre budget ou d&apos;autres fonctionnalités depuis sa page.</p>
+          ) : (
+            <ol className="space-y-3">
+              {thread.map((entry) => (
+                <li key={entry.id} className={`rounded-xl border p-3 text-sm ${entry.author === "client" ? "bg-warning/5" : "bg-surface/60"}`}>
+                  <p className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{entry.author === "client" ? (entry.authorName ?? "Client") : "Vous"}</span>
+                    <span>
+                      {entry.quoteNumber} · {stamp.format(entry.createdAt)}
+                    </span>
+                  </p>
+                  {entry.proposedTotal ? (
+                    <p className="mt-1.5">
+                      Budget proposé : <span className="font-semibold">{money(entry.proposedTotal)}</span>{" "}
+                      <span className="text-muted-foreground">(devis : {money(quote.total)})</span>
+                    </p>
+                  ) : null}
+                  {entry.requestedFeatures && <p className="mt-1.5 whitespace-pre-line"><span className="block text-muted-foreground">Fonctionnalités demandées :</span>{entry.requestedFeatures}</p>}
+                  <p className="mt-1.5 whitespace-pre-line">{entry.message}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+          {OPEN_QUOTE_STATUSES.includes(quote.status) && (
+            <div className="space-y-4 border-t pt-4">
+              {drafts[0] ? (
+                <Link href={`/admin/devis/emis/${drafts[0].id}`} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-accent-foreground">
+                  Reprendre la révision en cours
+                </Link>
+              ) : (
+                <ConfirmButton
+                  action={reviseQuoteAction.bind(null, quote.id)}
+                  confirmText="Créer une nouvelle version de ce devis ? Elle remplacera celle-ci dès son envoi."
+                  label="Réviser le devis (nouvelle version)"
+                  variant="neutral"
+                />
+              )}
+              <NegotiationReply action={replyNegotiationAction.bind(null, quote.id)} />
+            </div>
+          )}
+        </section>
+      )}
+    </>
+  );
   const money = (cents: number) => formatMoney(cents, quote.currency);
 
   const header = (
@@ -83,7 +167,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     return (
       <>
         {header}
-        <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
           <QuoteEditor
             action={saveQuoteAction.bind(null, id)}
             initial={{
@@ -106,6 +190,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             }}
           />
           <div className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            {negotiation}
             <QuoteSendPanel
               emailAction={sendQuoteEmailAction.bind(null, id)}
               whatsappAction={whatsappQuoteAction.bind(null, id)}
@@ -123,11 +208,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   return (
     <>
       {header}
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <section className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <section className="admin-card overflow-x-auto p-2">
+            <table className="admin-table min-w-[520px]">
+              <thead>
                 <tr className="border-b">
                   <th className="px-4 py-3 font-medium">Description</th>
                   <th className="px-4 py-3 text-right font-medium">Qté</th>
@@ -170,12 +255,13 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             </table>
           </section>
           <p className="text-sm text-muted-foreground">
-            Un devis envoyé n&apos;est plus modifiable. Pour le réviser, utilisez « Dupliquer » : un nouveau brouillon est créé et recevra son propre numéro.
+            Un devis envoyé n&apos;est plus modifiable. Pour le réviser après une demande du client, utilisez « Réviser le devis » dans le panneau Négociation : la nouvelle version remplace celle-ci dès son envoi.
           </p>
         </div>
 
         <aside className="space-y-4">
-          <section className="space-y-3 rounded-xl border bg-card p-5">
+          {negotiation}
+          <section className="space-y-3 admin-card p-5">
             <h2 className="font-sans text-base font-semibold tracking-normal">Suivi</h2>
             <ul className="space-y-1.5 text-sm">
               <li>Émis le {dateOnly.format(new Date(`${quote.issueDate}T12:00:00Z`))}</li>
@@ -204,14 +290,37 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             <section className="space-y-3 rounded-xl border border-success/40 bg-success/5 p-5">
               <h2 className="font-sans text-base font-semibold tracking-normal">Conversion</h2>
               {quote.convertedAt ? (
-                <p className="text-sm">Client créé ou rattaché le {dateTime.format(quote.convertedAt)}.</p>
+                <div className="space-y-2 text-sm">
+                  <p>Converti le {dateTime.format(quote.convertedAt)}.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {quote.clientId && (
+                      <Link href={`/admin/clients/${quote.clientId}`} className="inline-flex h-9 items-center rounded-xl border bg-card px-3 text-sm hover:bg-surface">
+                        Fiche client
+                      </Link>
+                    )}
+                    {quote.clientProjectId && (
+                      <Link href={`/admin/clients/projets/${quote.clientProjectId}`} className="inline-flex h-9 items-center rounded-xl border bg-card px-3 text-sm hover:bg-surface">
+                        Projet client
+                      </Link>
+                    )}
+                  </div>
+                </div>
               ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Crée ou rattache la fiche client. Le projet client, les jalons et la facture d&apos;acompte arriveront avec le module de facturation.
-                  </p>
-                  <ActionButton action={convertQuoteAction.bind(null, id)} label="Convertir en client" />
-                </>
+                <form action={convertQuoteAction.bind(null, id)} className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Crée en une fois le client, le projet client et, si vous le souhaitez, les jalons et la facture d&apos;acompte.</p>
+                  <label className="block space-y-1.5 text-sm">
+                    <span className="font-medium">Acompte (%)</span>
+                    <input name="depositPercent" type="number" min={0} max={100} defaultValue={30} className="h-10 w-28 rounded-lg border bg-card px-3 text-sm" />
+                    <span className="block text-xs text-muted-foreground">0 pour ne pas créer de facture d&apos;acompte.</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="milestones" value="1" defaultChecked className="size-4 accent-[var(--accent)]" />
+                    Créer un jalon par ligne du devis
+                  </label>
+                  <button type="submit" className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-accent-foreground hover:bg-accent/90">
+                    Convertir
+                  </button>
+                </form>
               )}
             </section>
           )}

@@ -100,9 +100,14 @@ export async function deleteQuoteAction(id: string): Promise<void> {
   redirect("/admin/devis/emis");
 }
 
-export async function convertQuoteAction(id: string): Promise<void> {
-  await convertQuote(id, await actor());
+export async function convertQuoteAction(id: string, formData: FormData): Promise<void> {
+  const percent = Number(String(formData.get("depositPercent") ?? "0").replace(",", "."));
+  const result = await convertQuote(id, await actor(), {
+    depositPercent: Number.isFinite(percent) ? Math.min(100, Math.max(0, Math.round(percent))) : 0,
+    milestones: formData.get("milestones") === "1",
+  });
   revalidatePath(`/admin/devis/emis/${id}`);
+  redirect(result.invoiceId ? `/admin/facturation/${result.invoiceId}` : `/admin/clients/projets/${result.projectId}`);
 }
 
 export async function setRequestStatusAction(id: string, status: QuoteRequest["status"]): Promise<void> {
@@ -111,4 +116,22 @@ export async function setRequestStatusAction(id: string, status: QuoteRequest["s
   await writeAudit({ actorId: user.id, action: `quote_request.${status}`, entityType: "quote_request", entityId: id, ip: user.ip });
   revalidatePath("/admin/devis");
   revalidatePath(`/admin/devis/${id}`);
+}
+
+export async function replyNegotiationAction(id: string, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
+  const user = await actor();
+  const { replyToNegotiation } = await import("../services/negotiation");
+  try {
+    await replyToNegotiation(id, String(formData.get("message") ?? ""), user);
+  } catch (error) {
+    return failure(error);
+  }
+  revalidatePath(`/admin/devis/emis/${id}`);
+  return { ok: true, message: "Réponse envoyée au client, le devis est de nouveau ouvert." };
+}
+
+export async function reviseQuoteAction(id: string): Promise<void> {
+  const { reviseQuote } = await import("../services/negotiation");
+  const revision = await reviseQuote(id, await actor());
+  redirect(`/admin/devis/emis/${revision}`);
 }

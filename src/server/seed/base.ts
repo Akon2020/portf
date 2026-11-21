@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { services, settings, skills, socialLinks } from "../db/schema";
+import { faqs, partners, services, settings, skills, socialLinks } from "../db/schema";
 import { DEFAULT_SETTINGS } from "../content/settings-schema";
 
 /** Base data: settings, social links, services and skills. Existing rows are never overwritten. */
@@ -130,4 +130,71 @@ export async function seedBase(log: (message: string) => void): Promise<void> {
     }
   }
   log(`compétences : ${order} vérifiées`);
+
+  // Trust band: organizations of the journey, without logo nor website until Isaac adds them.
+  const organizations = ["Akon Tech", "Université Catholique de Bukavu", "GDG On Campus UCB", "DevFest Bujumbura", "Code Growth Alive"];
+  const existingPartners = new Set((await db.select({ name: partners.name }).from(partners)).map((row) => row.name));
+  for (const [index, name] of organizations.entries()) {
+    if (!existingPartners.has(name)) await db.insert(partners).values({ name, sortOrder: index });
+  }
+  log(`bandeau de confiance : ${organizations.length} organisations vérifiées`);
+
+  // Starter FAQ, built only from facts given by Isaac. Editable in Contenu, Questions fréquentes.
+  const faqRows = [
+    {
+      category: { fr: "Travailler ensemble", en: "Working together" },
+      question: { fr: "Sur quels types de missions puis-je vous solliciter ?", en: "What kind of work can I hire you for?" },
+      answer: {
+        fr: "Je suis ouvert aux missions freelance, aux collaborations et aux postes à temps plein : applications web et mobiles, intégration de l'IA, sécurité applicative, ainsi que le mentorat et la formation.",
+        en: "I am open to freelance missions, collaborations and full-time roles: web and mobile applications, AI integration, application security, as well as mentoring and training.",
+      },
+      showOnHome: true,
+    },
+    {
+      category: { fr: "Travailler ensemble", en: "Working together" },
+      question: { fr: "Sous quel délai répondez-vous ?", en: "How quickly do you reply?" },
+      answer: { fr: "Je réponds en général sous 24 à 48 h, par e-mail ou WhatsApp selon votre préférence.", en: "I usually reply within 24 to 48 hours, by e-mail or WhatsApp as you prefer." },
+      showOnHome: true,
+    },
+    {
+      category: { fr: "Travailler ensemble", en: "Working together" },
+      question: { fr: "Où êtes-vous basé et dans quelles langues travaillez-vous ?", en: "Where are you based and which languages do you work in?" },
+      answer: { fr: "Je suis basé à Bukavu, en République démocratique du Congo, et je travaille en français et en anglais, à distance ou sur place.", en: "I am based in Bukavu, Democratic Republic of the Congo, and work in French and English, remotely or on site." },
+      showOnHome: false,
+    },
+    {
+      category: { fr: "Devis et paiement", en: "Quotes and payment" },
+      question: { fr: "Comment obtenir un devis ?", en: "How do I get a quote?" },
+      answer: {
+        fr: "Remplissez le formulaire de demande de devis : type de projet, fonctionnalités, budget et délai. Vous recevez un devis détaillé que vous pouvez accepter en ligne, ou négocier si le budget ou le périmètre doit évoluer.",
+        en: "Fill in the quote request form: project type, features, budget and timeline. You receive a detailed quote that you can accept online, or negotiate if the budget or scope needs to change.",
+      },
+      showOnHome: true,
+    },
+    {
+      category: { fr: "Devis et paiement", en: "Quotes and payment" },
+      question: { fr: "Dans quelle devise et comment se règlent les factures ?", en: "Which currency and payment methods do you accept?" },
+      answer: {
+        fr: "Les devis et factures sont établis en dollars américains ou en francs congolais. Chaque paiement, total ou partiel, donne lieu à un reçu, et vous suivez à tout moment le montant déjà réglé et le reste à payer.",
+        en: "Quotes and invoices are issued in US dollars or Congolese francs. Every payment, full or partial, comes with a receipt, and you can always see what has been paid and what remains.",
+      },
+      showOnHome: false,
+    },
+    {
+      category: { fr: "Suivi du projet", en: "Project follow-up" },
+      question: { fr: "Comment suivre l'avancement de mon projet ?", en: "How can I follow my project?" },
+      answer: {
+        fr: "Chaque client dispose d'un espace personnel, accessible par un lien envoyé par e-mail, avec l'avancement, les étapes, les fichiers partagés, les devis, les factures et les reçus.",
+        en: "Every client has a personal space, opened with a link sent by e-mail, showing progress, milestones, shared files, quotes, invoices and receipts.",
+      },
+      showOnHome: false,
+    },
+  ];
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(faqs);
+  if (total === 0) {
+    await db.insert(faqs).values(faqRows.map((row, index) => ({ ...row, sortOrder: index })));
+    log(`questions fréquentes : ${faqRows.length} créées`);
+  } else {
+    log("questions fréquentes : déjà présentes");
+  }
 }

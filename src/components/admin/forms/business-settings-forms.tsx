@@ -1,13 +1,41 @@
 "use client";
 
 import type { FormState } from "@/server/actions/content";
-import type { IssuerSettings, TemplatesSettings } from "@/server/content/settings-schema";
+import type { IssuerSettings, SecuritySettings, TemplatesSettings } from "@/server/content/settings-schema";
 import { EntityForm } from "../entity-form";
-import { TextAreaField, TextField } from "../fields";
+import { useState } from "react";
+import { CheckboxField, Field, TextAreaField, TextField } from "../fields";
+import { MediaPicker, type LibraryItem } from "../media-picker";
+
+const SWATCHES = ["#C2410C", "#132238", "#16A34A", "#1D4ED8", "#7C3AED", "#0F766E", "#B91C1C", "#111827"];
+
+/** Brand color of the documents: preset swatches, a color picker and the hex value. */
+function ColorField({ name, defaultValue, error }: { name: string; defaultValue: string; error?: string }) {
+  const [value, setValue] = useState(defaultValue);
+  return (
+    <Field label="Couleur des documents" htmlFor={`${name}-hex`} error={error} hint="Bandeau d'en-tête, tableau et totaux des devis, factures et reçus">
+      <div className="flex flex-wrap items-center gap-2">
+        {SWATCHES.map((swatch) => (
+          <button
+            key={swatch}
+            type="button"
+            onClick={() => setValue(swatch)}
+            aria-label={`Choisir ${swatch}`}
+            aria-pressed={value.toLowerCase() === swatch.toLowerCase()}
+            className="size-8 rounded-full border-2 border-transparent ring-offset-2 ring-offset-background aria-pressed:ring-2 aria-pressed:ring-foreground"
+            style={{ backgroundColor: swatch }}
+          />
+        ))}
+        <input type="color" value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#c2410c"} onChange={(event) => setValue(event.target.value)} aria-label="Couleur personnalisée" className="h-8 w-10 cursor-pointer rounded border bg-card" />
+        <input id={`${name}-hex`} name={name} value={value} onChange={(event) => setValue(event.target.value)} maxLength={7} className="h-9 w-28 rounded-lg border bg-card px-2 font-mono text-sm" />
+      </div>
+    </Field>
+  );
+}
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-export function IssuerSettingsForm({ action, value }: { action: Action; value: IssuerSettings }) {
+export function IssuerSettingsForm({ action, value, library }: { action: Action; value: IssuerSettings; library: LibraryItem[] }) {
   return (
     <EntityForm action={action}>
       {(errors) => (
@@ -16,6 +44,19 @@ export function IssuerSettingsForm({ action, value }: { action: Action; value: I
             Ces informations figurent sur les devis, factures et reçus. Les coordonnées de paiement et les identifiants légaux ne sont jamais
             remplis automatiquement : saisissez vos vraies valeurs.
           </p>
+          <div className="grid gap-6 admin-card p-5 sm:grid-cols-2">
+            <MediaPicker name="logoMediaId" label="Logo (PNG ou JPEG de préférence, fond transparent conseillé)" library={library} defaultValue={value.logoMediaId ? [value.logoMediaId] : []} />
+            <div className="space-y-4">
+              <ColorField name="brandColor" defaultValue={value.brandColor} error={errors.brandColor} />
+              <p className="text-xs text-muted-foreground">
+                Enregistrez puis{" "}
+                <a href="/admin/parametres/apercu-pdf" target="_blank" rel="noopener" className="font-medium text-accent underline underline-offset-4">
+                  ouvrez un aperçu de facture
+                </a>{" "}
+                pour voir le rendu.
+              </p>
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField name="name" label="Nom" required defaultValue={value.name} errors={errors} />
             <TextField name="businessName" label="Nom commercial" defaultValue={value.businessName} errors={errors} hint="Ex. Akon Tech" />
@@ -30,6 +71,7 @@ export function IssuerSettingsForm({ action, value }: { action: Action; value: I
           <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
             <TextField name="quoteValidityDays" label="Validité des devis (jours)" type="number" defaultValue={value.quoteValidityDays} errors={errors} />
             <TextAreaField name="quoteTerms" label="Conditions par défaut des devis" rows={4} defaultValue={value.quoteTerms} errors={errors} hint="Ex. acompte, délais, révisions incluses" />
+            <TextAreaField name="invoiceTerms" label="Conditions par défaut des factures" rows={4} defaultValue={value.invoiceTerms} errors={errors} hint="Ex. pénalités de retard, délai de paiement" />
           </div>
           <TextAreaField name="footer" label="Mention de bas de page" rows={2} defaultValue={value.footer} errors={errors} />
         </>
@@ -53,15 +95,63 @@ export function TemplatesSettingsForm({ action, value }: { action: Action; value
             errors={errors}
             hint="Variables disponibles : {client}, {numero}, {total}, {validite}, {lien}"
           />
+          <TextAreaField
+            name="whatsappInvoice"
+            label="Message WhatsApp d'envoi de facture"
+            rows={4}
+            defaultValue={value.whatsappInvoice}
+            errors={errors}
+            hint="Variables : {client}, {numero}, {total}, {solde}, {echeance}, {devise}, {lien}"
+          />
+          <TextAreaField
+            name="whatsappReminder"
+            label="Message WhatsApp de relance"
+            rows={4}
+            defaultValue={value.whatsappReminder}
+            errors={errors}
+            hint="Variables : {client}, {numero}, {total}, {solde}, {echeance}, {devise}, {lien}"
+          />
+          <TextAreaField
+            name="whatsappReceipt"
+            label="Message WhatsApp d'envoi de reçu"
+            rows={3}
+            defaultValue={value.whatsappReceipt}
+            errors={errors}
+            hint="Variables : {client}, {montant}, {facture}, {numero}, {solde}, {lien}"
+          />
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Modèles de réponse (laisser le titre vide pour supprimer)</legend>
             {replies.map((reply, index) => (
-              <div key={index} className="space-y-3 rounded-xl border bg-card/40 p-4">
+              <div key={index} className="space-y-3 admin-card p-4">
                 <TextField name={`replies[${index}].title`} label={`Titre du modèle ${index + 1}`} defaultValue={reply?.title} errors={errors} />
                 <TextAreaField name={`replies[${index}].body`} label="Texte" rows={5} defaultValue={reply?.body} errors={errors} />
               </div>
             ))}
           </fieldset>
+        </>
+      )}
+    </EntityForm>
+  );
+}
+
+export function SecuritySettingsForm({ action, value }: { action: Action; value: SecuritySettings }) {
+  return (
+    <EntityForm action={action}>
+      {(errors) => (
+        <>
+          <TextField
+            name="autoBanThreshold"
+            label="Seuil de bannissement automatique (score)"
+            type="number"
+            defaultValue={value.autoBanThreshold}
+            errors={errors}
+            hint="Ex. un scan .env vaut 50, une injection SQL 40, un échec de connexion 5. Le score est divisé par deux toutes les 24 h."
+          />
+          <div className="space-y-3">
+            <CheckboxField name="alertOnAutoBan" label="M'alerter à chaque bannissement automatique" defaultChecked={value.alertOnAutoBan} />
+            <CheckboxField name="alertOnCritical" label="M'alerter pour tout événement critique" defaultChecked={value.alertOnCritical} />
+            <CheckboxField name="trackAudience" label="Mesurer l'audience du site public" hint="Sans cookie et sans conserver d'adresse IP" defaultChecked={value.trackAudience} />
+          </div>
         </>
       )}
     </EntityForm>

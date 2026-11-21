@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
-import { journeyItems, projectImages, projects, settings, testimonials } from "../db/schema";
+import { journeyItems, posts, projectImages, projects, settings, testimonials } from "../db/schema";
 import { DEFAULT_SETTINGS, type ProfileSettings } from "../content/settings-schema";
 import { importRemoteMedia } from "../services/media";
 import {
@@ -8,6 +8,7 @@ import {
   PORTRAIT_URL,
   SEED_BIO_LONG,
   SEED_JOURNEY,
+  SEED_POSTS,
   SEED_PROJECTS,
   SEED_TESTIMONIALS,
   SEED_VALUES,
@@ -128,4 +129,23 @@ export async function seedContent(log: Log, options: { images: boolean }): Promi
     });
   }
   log(`témoignages : ${SEED_TESTIMONIALS.length} vérifiés (en attente)`);
+
+  // Blog articles of the old site, as empty drafts (English).
+  const existingPosts = new Set((await db.select({ slug: posts.slug }).from(posts)).map((row) => row.slug));
+  for (const post of SEED_POSTS) {
+    if (existingPosts.has(post.slug)) continue;
+    await db.insert(posts).values({
+      slug: post.slug,
+      title: { fr: post.title, en: post.title },
+      excerpt: { fr: "", en: "" },
+      category: post.category,
+      tags: post.tags,
+      status: "draft",
+      publishedAt: new Date(`${post.date}T09:00:00+02:00`),
+      needsReview: true,
+      reviewNote:
+        "Article de l'ancien site (anglais) : seul le titre a pu être récupéré. Retrouver le texte complet puis l'importer avec pnpm import:post, traduire le titre en français si souhaité, relire avant publication.",
+    });
+  }
+  log(`blog : ${SEED_POSTS.length} articles vérifiés (brouillons)`);
 }

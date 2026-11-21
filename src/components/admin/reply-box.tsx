@@ -26,7 +26,7 @@ export function ReplyBox({
   }, [state]);
 
   return (
-    <form action={formAction} className="space-y-3 rounded-xl border bg-card p-4">
+    <form action={formAction} className="space-y-3 admin-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label htmlFor="reply-body" className="text-sm font-medium">
           Répondre à <span className="font-mono text-xs text-muted-foreground">{recipient}</span>

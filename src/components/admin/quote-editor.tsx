@@ -25,7 +25,16 @@ export interface EditorQuote {
   notes: string;
   terms: string;
   items: { description: string; quantity: string; unitPrice: string }[];
+  /** Invoices only. */
+  recipientAddress?: string;
 }
+
+export type DocumentKind = "quote" | "invoice";
+
+const KIND_LABELS = {
+  quote: { subject: "Objet du devis", secondDate: "Valable jusqu'au", secondDateName: "validUntil", notes: "Notes (visibles sur le devis)", document: "le devis" },
+  invoice: { subject: "Objet de la facture", secondDate: "Échéance", secondDateName: "dueDate", notes: "Notes (visibles sur la facture)", document: "la facture" },
+} as const;
 
 const input = "h-10 w-full rounded-lg border bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:border-destructive";
 
@@ -49,7 +58,8 @@ function StatusMessage({ state }: { state: QuoteFormState }) {
   );
 }
 
-export function QuoteEditor({ action, initial }: { action: Action; initial: EditorQuote }) {
+export function QuoteEditor({ action, initial, kind = "quote" }: { action: Action; initial: EditorQuote; kind?: DocumentKind }) {
+  const labels = KIND_LABELS[kind];
   const [state, formAction, pending] = useActionState(action, {});
   const [values, setValues] = useState(initial);
   const [keys, setKeys] = useState(() => initial.items.map((_, index) => index));
@@ -77,8 +87,8 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
 
   return (
     <form onSubmit={submitWithoutReset(formAction)} className="space-y-6" noValidate>
-      <section className="grid gap-4 rounded-xl border bg-card/40 p-5 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Objet du devis" error={errors.title} className="sm:col-span-2 lg:col-span-3">
+      <section className="grid gap-4 admin-card p-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label={labels.subject} error={errors.title} className="sm:col-span-2 lg:col-span-3">
           <input name="title" value={values.title} onChange={(event) => set("title", event.target.value)} className={input} aria-invalid={!!errors.title} />
         </Field>
         <Field label="Destinataire" error={errors.recipientName}>
@@ -90,11 +100,16 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
         <Field label="WhatsApp ou téléphone" error={errors.recipientPhone}>
           <input name="recipientPhone" value={values.recipientPhone} onChange={(event) => set("recipientPhone", event.target.value)} className={input} placeholder="+243..." />
         </Field>
+        {kind === "invoice" && (
+          <Field label="Adresse (facultatif)" error={errors.recipientAddress} className="sm:col-span-2 lg:col-span-3">
+            <input name="recipientAddress" value={values.recipientAddress ?? ""} onChange={(event) => set("recipientAddress", event.target.value)} className={input} />
+          </Field>
+        )}
         <Field label="Date d'émission" error={errors.issueDate}>
           <input name="issueDate" type="date" value={values.issueDate} onChange={(event) => set("issueDate", event.target.value)} className={input} />
         </Field>
-        <Field label="Valable jusqu'au" error={errors.validUntil}>
-          <input name="validUntil" type="date" value={values.validUntil} onChange={(event) => set("validUntil", event.target.value)} className={input} />
+        <Field label={labels.secondDate} error={errors[labels.secondDateName]}>
+          <input name={labels.secondDateName} type="date" value={values.validUntil} onChange={(event) => set("validUntil", event.target.value)} className={input} />
         </Field>
         <Field label="Langue du document">
           <select name="locale" value={values.locale} onChange={(event) => set("locale", event.target.value as "fr" | "en")} className={input}>
@@ -113,7 +128,7 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
         </Field>
       </section>
 
-      <section className="rounded-xl border bg-card/40 p-5">
+      <section className="admin-card p-5">
         <h2 className="mb-4 font-sans text-base font-semibold tracking-normal">Lignes</h2>
         <div className="space-y-3">
           <div className="hidden grid-cols-[1fr_90px_140px_130px_40px] gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
@@ -200,8 +215,8 @@ export function QuoteEditor({ action, initial }: { action: Action; initial: Edit
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-xl border bg-card/40 p-5 md:grid-cols-2">
-        <Field label="Notes (visibles sur le devis)" error={errors.notes}>
+      <section className="grid gap-4 admin-card p-5 md:grid-cols-2">
+        <Field label={labels.notes} error={errors.notes}>
           <textarea name="notes" rows={4} value={values.notes} onChange={(event) => set("notes", event.target.value)} className={cn(input, "h-auto py-2")} />
         </Field>
         <Field label="Conditions" error={errors.terms}>
@@ -227,22 +242,28 @@ export function QuoteSendPanel({
   hasEmail,
   hasPhone,
   alreadySent,
+  kind = "quote",
+  mode = "send",
 }: {
   emailAction: Action;
   whatsappAction: () => Promise<{ link?: string; error?: string }>;
   hasEmail: boolean;
   hasPhone: boolean;
   alreadySent: boolean;
+  kind?: DocumentKind;
+  mode?: "send" | "reminder";
 }) {
+  const labels = KIND_LABELS[kind];
   const [state, formAction, pending] = useActionState(emailAction, {});
   const [whatsappError, setWhatsappError] = useState<string | null>(null);
   const [opening, startOpening] = useTransition();
 
   return (
-    <section className="space-y-4 rounded-xl border bg-card p-5">
-      <h2 className="font-sans text-base font-semibold tracking-normal">{alreadySent ? "Renvoyer" : "Envoyer"}</h2>
-      {!alreadySent && <p className="text-xs text-muted-foreground">Le premier envoi attribue le numéro définitif et verrouille le devis.</p>}
+    <section className="space-y-4 admin-card p-5">
+      <h2 className="font-sans text-base font-semibold tracking-normal">{mode === "reminder" ? "Relancer" : alreadySent ? "Renvoyer" : "Envoyer"}</h2>
+      {!alreadySent && <p className="text-xs text-muted-foreground">Le premier envoi attribue le numéro définitif et verrouille {labels.document}.</p>}
       <form onSubmit={submitWithoutReset(formAction)} className="space-y-3">
+        {mode === "reminder" && <input type="hidden" name="reminder" value="1" />}
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">Message personnel (facultatif)</span>
           <textarea name="message" rows={3} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
@@ -284,7 +305,7 @@ export function QuoteSendPanel({
           Envoyer par WhatsApp
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
-          Ouvre WhatsApp avec un message pré-rempli contenant le lien du devis. Le PDF ne peut pas être joint par ce moyen.
+          Ouvre WhatsApp avec un message pré-rempli contenant le lien vers {labels.document}. Le PDF ne peut pas être joint par ce moyen.
         </p>
         {!hasPhone && <p className="mt-1 text-xs text-muted-foreground">Ajoutez un numéro WhatsApp et enregistrez.</p>}
         {whatsappError && (
@@ -294,5 +315,37 @@ export function QuoteSendPanel({
         )}
       </div>
     </section>
+  );
+}
+
+/** Answer to a client proposal that keeps the quote as it is (the quote reopens for the client). */
+export function NegotiationReply({ action }: { action: Action }) {
+  const [state, formAction, pending] = useActionState(action, {});
+  const [message, setMessage] = useState("");
+  return (
+    <form
+      onSubmit={submitWithoutReset((formData) => {
+        formAction(formData);
+        setMessage("");
+      })}
+      className="space-y-3"
+    >
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">Répondre sans modifier le devis</span>
+        <textarea
+          name="message"
+          rows={4}
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="Expliquez ce qui est possible, ce qui ne l'est pas, ou proposez un compromis."
+          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+        />
+      </label>
+      <Button type="submit" variant="outline" disabled={pending || message.trim().length < 5} className="h-10 w-full">
+        {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
+        Envoyer la réponse
+      </Button>
+      <StatusMessage state={state} />
+    </form>
   );
 }

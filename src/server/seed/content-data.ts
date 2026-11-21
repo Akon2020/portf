@@ -574,3 +574,17 @@ export const SEED_BIO_LONG: LocalizedText = {
   fr: "Mon intérêt pour la technologie est né d'une curiosité simple : comprendre comment fonctionne un site web, comment les systèmes communiquent et comment circulent les données.\n\nAujourd'hui, je travaille sur le développement web, les applications mobiles, l'intégration de l'IA et la cybersécurité. Je conçois des systèmes backend sécurisés avec Node.js et Python, et des interfaces web et mobiles intuitives avec React et React Native.\n\nJe suis aussi mentor : ancien co-organisateur de GDG On Campus UCB, j'ai été intervenant au DevFest 2024 de Bujumbura.",
   en: "My interest in technology started with a simple curiosity: how a website works, how systems talk to each other and how data moves.\n\nToday I work across web development, mobile applications, AI integration and cybersecurity. I build secure backend systems with Node.js and Python, and intuitive web and mobile interfaces with React and React Native.\n\nI am also a mentor: a former co-organizer of GDG On Campus UCB, I spoke at DevFest 2024 in Bujumbura.",
 };
+
+/**
+ * Articles of the old site. Only the metadata could be recovered (the article
+ * pages return a 404), so they are created as empty drafts to be completed
+ * with `pnpm import:post`.
+ */
+export const SEED_POSTS: { slug: string; title: string; category: string; date: string; tags: string[] }[] = [
+  { slug: "building-secure-rest-apis", title: "Building Secure REST APIs: Best Practices for 2025", category: "Web Dev", date: "2025-01-15", tags: ["api", "security", "backend"] },
+  { slug: "optimizing-react-native-performance", title: "Optimizing React Native Performance: Lessons from Production", category: "Mobile Dev", date: "2025-01-08", tags: ["react-native", "performance", "mobile"] },
+  { slug: "integrating-ai-into-web-apps", title: "Integrating AI into Your Web Apps: A Practical Guide", category: "AI", date: "2024-12-20", tags: ["ai", "web"] },
+  { slug: "cybersecurity-fundamentals-for-developers", title: "Cybersecurity Fundamentals Every Developer Should Know", category: "Cybersecurity", date: "2024-12-10", tags: ["security", "owasp"] },
+  { slug: "from-student-to-fullstack-developer", title: "My Journey from Student to Fullstack Developer", category: "Dev Life", date: "2024-11-25", tags: ["career"] },
+  { slug: "mastering-nextjs-app-router", title: "Mastering Next.js App Router: A Complete Guide", category: "Web Dev", date: "2024-11-15", tags: ["nextjs", "react", "web"] },
+];

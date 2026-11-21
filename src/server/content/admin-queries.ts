@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   journeyItems,
@@ -8,6 +8,8 @@ import {
   services,
   skills,
   socialLinks,
+  faqs,
+  partners,
   stats,
   testimonials,
 } from "../db/schema";
@@ -59,6 +61,8 @@ export const ADMIN_LISTS = {
   temoignages: () => getDb().select().from(testimonials).orderBy(asc(testimonials.sortOrder)),
   chiffres: () => getDb().select().from(stats).orderBy(asc(stats.sortOrder)),
   reseaux: () => getDb().select().from(socialLinks).orderBy(asc(socialLinks.sortOrder)),
+  faq: () => getDb().select().from(faqs).orderBy(asc(faqs.sortOrder)),
+  partenaires: () => getDb().select().from(partners).orderBy(asc(partners.sortOrder)),
 };
 
 const TABLES = {
@@ -68,6 +72,8 @@ const TABLES = {
   temoignages: testimonials,
   chiffres: stats,
   reseaux: socialLinks,
+  faq: faqs,
+  partenaires: partners,
 } as const;
 
 export async function getEntityAdmin(route: keyof typeof TABLES, id: string) {
@@ -78,7 +84,7 @@ export async function getEntityAdmin(route: keyof typeof TABLES, id: string) {
 
 export async function contentCounts() {
   const db = getDb();
-  const [[p], [j], [s], [sv], [t], [st], [so], [m]] = await Promise.all([
+  const [[p], [j], [s], [sv], [t], [st], [so], [m], [fq], [pa]] = await Promise.all([
     db.select({ total: count() }).from(projects).where(isNull(projects.deletedAt)),
     db.select({ total: count() }).from(journeyItems).where(isNull(journeyItems.deletedAt)),
     db.select({ total: count() }).from(skills),
@@ -87,6 +93,8 @@ export async function contentCounts() {
     db.select({ total: count() }).from(stats),
     db.select({ total: count() }).from(socialLinks),
     db.select({ total: count() }).from(media).where(isNull(media.deletedAt)),
+    db.select({ total: count() }).from(faqs),
+    db.select({ total: count() }).from(partners),
   ]);
   return {
     projets: p.total,
@@ -95,6 +103,8 @@ export async function contentCounts() {
     services: sv.total,
     temoignages: t.total,
     chiffres: st.total,
+    faq: fq.total,
+    partenaires: pa.total,
     reseaux: so.total,
     medias: m.total,
   };
@@ -123,4 +133,24 @@ export async function reviewQueue() {
       .where(and(eq(media.needsReplacement, true), isNull(media.deletedAt))),
   ]);
   return { projects: projectRows, journey: journeyRows, testimonials: testimonialRows, media: mediaRows };
+}
+
+/** Badges of the admin navigation, one cheap query per counter. */
+export async function adminCounters() {
+  const rows = await getDb().execute<{ messages: number; quotes: number; review: number; invoices: number; tasks: number }>(sql`
+    select
+      (select count(*)::int from conversations where status = 'new') as messages,
+      (select count(*)::int from quote_requests where status = 'new') as quotes,
+      (select count(*)::int from invoices where status = 'overdue' and deleted_at is null) as invoices,
+      (select count(*)::int from tasks where status <> 'done' and deleted_at is null and due_at < now()) as tasks,
+      (
+        (select count(*)::int from projects where needs_review and deleted_at is null) +
+        (select count(*)::int from journey_items where needs_review and deleted_at is null) +
+        (select count(*)::int from testimonials where needs_review) +
+        (select count(*)::int from posts where needs_review and deleted_at is null) +
+        (select count(*)::int from media where needs_replacement and deleted_at is null)
+      ) as review
+  `);
+  const row = rows[0];
+  return { messages: row?.messages ?? 0, quotes: row?.quotes ?? 0, review: row?.review ?? 0, invoices: row?.invoices ?? 0, tasks: row?.tasks ?? 0 };
 }

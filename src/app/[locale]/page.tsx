@@ -1,11 +1,13 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Code2, GraduationCap, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Code2, GraduationCap, Mail, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContactCta } from "@/components/public/contact-cta";
 import { JourneyTimeline } from "@/components/public/journey-timeline";
 import { JsonLd } from "@/components/public/json-ld";
 import { MediaImage } from "@/components/public/media-image";
+import { PostCard } from "@/components/public/post-card";
 import { ProjectCard } from "@/components/public/project-card";
+import { FaqList } from "@/components/public/faq-list";
 import { SectionLabel, SectionTitle, sectionNumbers } from "@/components/public/section-heading";
 import { SkillsGrid } from "@/components/public/skills-grid";
 import { SocialLinks } from "@/components/public/social-links";
@@ -15,6 +17,7 @@ import type { Locale } from "@/i18n/routing";
 import { tr } from "@/lib/localized";
 import { NBSP } from "@/lib/typography";
 import { pageMetadata } from "@/lib/seo";
+import { getLatestGalleryImages, getPublishedPosts } from "@/server/content/blog";
 import { personJsonLd } from "@/server/content/person";
 import {
   getApprovedTestimonials,
@@ -25,6 +28,8 @@ import {
   getSetting,
   getSkills,
   getSocialLinks,
+  getFaqs,
+  getPartners,
   getStats,
 } from "@/server/content/queries";
 
@@ -49,7 +54,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, profile, stats, socials, services, projects, journey, skills, testimonials, person] = await Promise.all([
+  const [t, profile, stats, socials, services, projects, journey, skills, testimonials, person, posts, galleryImages, partners, faqs] = await Promise.all([
     getTranslations(),
     getSetting("profile"),
     getStats(),
@@ -60,11 +65,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
     getSkills(),
     getApprovedTestimonials(),
     personJsonLd(locale),
+    getPublishedPosts(),
+    getLatestGalleryImages(6),
+    getPartners(),
+    getFaqs(),
   ]);
+  const latestPosts = posts.slice(0, 3);
   const portrait = await getMediaById(profile.portraitMediaId);
   const featured = (projects.some((project) => project.isFeatured) ? projects.filter((project) => project.isFeatured) : projects).slice(0, 4);
-  const organizations = [...new Set(journey.map((item) => item.organization.split(" / ").at(-1)!))];
   const linkedin = socials.find((link) => link.platform === "linkedin");
+
+  const homeFaqs = faqs.filter((item) => item.showOnHome);
 
   const visible = [
     "profile",
@@ -73,95 +84,113 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
     journey.length > 0 && "journey",
     skills.length > 0 && "stack",
     testimonials.length > 0 && "testimonials",
+    latestPosts.length > 0 && "blog",
+    galleryImages.length > 0 && "gallery",
+    homeFaqs.length > 0 && "faq",
     "contact",
-  ].filter(Boolean) as ("profile" | "expertise" | "projects" | "journey" | "stack" | "testimonials" | "contact")[];
+  ].filter(Boolean) as ("profile" | "expertise" | "projects" | "journey" | "stack" | "testimonials" | "blog" | "gallery" | "faq" | "contact")[];
   const n = sectionNumbers(visible);
 
   return (
     <>
       <JsonLd data={person} />
 
-      {/* Hero */}
-      <section className="container-site grid items-center gap-12 pb-16 pt-12 md:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-        <div>
-          <p className="label-mono flex flex-wrap items-center gap-x-3 gap-y-2 text-muted-foreground">
-            <span className="text-accent">{tr(profile.title, locale)}</span>
-            <span aria-hidden="true">·</span>
-            <span>{tr(profile.location, locale)}</span>
-          </p>
-          <h1 className="mt-6 text-(length:--text-hero) font-medium leading-[0.98]">{tr(profile.heroHeading, locale)}</h1>
-          <p className="mt-6 max-w-xl text-(length:--text-body) text-muted-foreground">{tr(profile.heroIntro, locale)}</p>
-          {profile.available && (
-            <p className="mt-6 inline-flex items-center gap-2.5 rounded-full border bg-card px-3.5 py-1.5 text-sm">
-              <span className="relative flex size-2" aria-hidden="true">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-green opacity-60 motion-reduce:hidden" />
-                <span className="relative inline-flex size-2 rounded-full bg-brand-green" />
-              </span>
-              {tr(profile.availabilityLabel, locale)}
+      {/* Hero: portrait fading into the page, on top on phones, on the right on large screens. */}
+      <section className="relative overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 size-[44rem] rounded-full bg-accent/10 blur-3xl" />
+        <div className="container-site relative grid items-center lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10">
+          <div className="relative z-10 order-2 -mt-16 pb-12 text-center sm:-mt-24 lg:order-1 lg:mt-0 lg:py-6 lg:text-left">
+            <p className="label-mono flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-muted-foreground lg:justify-start">
+              <span className="text-accent">{tr(profile.title, locale)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{tr(profile.location, locale)}</span>
             </p>
-          )}
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/devis"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5"
-            >
-              {t("hero.ctaPrimary")}
-              <ArrowUpRight className="size-4" aria-hidden="true" />
-            </Link>
-            <Link href="/projets" className="inline-flex h-12 items-center gap-2 rounded-full border px-6 text-sm font-medium hover:bg-surface">
-              {t("hero.ctaSecondary")}
-              <ArrowDownRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
-          <SocialLinks links={socials} className="mt-8" />
-          <div className="mt-10">
-            <StatsRow stats={stats.map((stat) => ({ ...stat, label: tr(stat.label, locale) }))} />
-          </div>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-6 -bottom-6 top-10 -rotate-3 rounded-[2rem] border border-brand-orange/40"
-          />
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[999px_999px_24px_24px] border bg-surface shadow-xl">
-            {portrait && (
-              <MediaImage
-                media={portrait}
-                locale={locale}
-                alt={t("hero.portraitAlt")}
-                priority
-                sizes="(min-width: 1024px) 460px, 90vw"
-                className="size-full object-cover object-top"
-              />
+            <h1 className="mx-auto mt-4 max-w-2xl text-[clamp(2.2rem,1.1rem+2.6vw,3.7rem)] font-medium leading-[1.03] lg:mx-0">{tr(profile.heroHeading, locale)}</h1>
+            <p className="mx-auto mt-4 max-w-xl text-(length:--text-body) lg:text-base text-muted-foreground lg:mx-0">{tr(profile.heroIntro, locale)}</p>
+            {profile.available && (
+              <p className="mt-5 inline-flex max-w-full items-center gap-2.5 rounded-full lg:mt-4 border bg-card/80 px-3.5 py-1.5 text-sm backdrop-blur">
+                <span className="relative flex size-2" aria-hidden="true">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-green opacity-60 motion-reduce:hidden" />
+                  <span className="relative inline-flex size-2 rounded-full bg-brand-green" />
+                </span>
+                {tr(profile.availabilityLabel, locale)}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col items-stretch justify-center gap-3 lg:mt-5 min-[440px]:flex-row min-[440px]:items-center lg:justify-start">
+              <Link
+                href="/contact"
+                data-track="cta_click"
+                data-track-label="work_with_me_hero"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5"
+              >
+                {t("hero.workWithMe")}
+                <Mail className="size-4" aria-hidden="true" />
+              </Link>
+              <Link href="/projets" className="inline-flex h-12 items-center justify-center gap-2 rounded-full border px-6 text-sm font-medium hover:bg-surface">
+                {t("hero.ctaSecondary")}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="mt-5 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start lg:gap-6">
+              <Link href="/devis" data-track="cta_click" data-track-label="devis_hero" className="text-sm text-muted-foreground underline decoration-accent underline-offset-4 hover:text-foreground">
+                {t("hero.ctaPrimary")}
+              </Link>
+              <SocialLinks links={socials} className="justify-center" size="sm" />
+            </div>
+            {stats.length > 0 && (
+              <div className="mt-7 text-left lg:mt-6">
+                <StatsRow stats={stats.map((stat) => ({ ...stat, label: tr(stat.label, locale) }))} />
+              </div>
             )}
           </div>
-          <div className="absolute -left-2 top-8 -rotate-6 rounded-lg border bg-card px-4 py-3 shadow-md">
-            <p className="label-mono text-accent">{t("hero.since")}</p>
-            <p className="font-heading text-2xl font-medium">{profile.foundedYear}</p>
-          </div>
-          <div className="absolute -right-2 bottom-10 rounded-lg border bg-card px-4 py-3 shadow-md">
-            <p className="text-xs text-muted-foreground">{t("hero.basedIn")}</p>
-            <p className="font-medium">{tr(profile.location, locale)}</p>
+
+          <div className="relative order-1 mx-auto w-full max-w-[440px] pt-4 sm:max-w-[520px] lg:order-2 lg:max-w-none lg:pt-0">
+            <div className="hero-portrait relative aspect-[4/5] w-full lg:aspect-auto lg:h-[min(calc(100svh-6rem),760px)]">
+              {portrait && (
+                <MediaImage
+                  media={portrait}
+                  locale={locale}
+                  alt={t("hero.portraitAlt")}
+                  priority
+                  sizes="(min-width: 1024px) 560px, (min-width: 640px) 520px, 92vw"
+                  className="size-full object-cover object-top"
+                />
+              )}
+            </div>
+            <div className="absolute bottom-[18%] right-0 hidden rounded-xl border bg-card/90 px-4 py-3 shadow-md backdrop-blur lg:block">
+              <p className="label-mono text-accent">{t("hero.since")}</p>
+              <p className="font-heading text-2xl font-medium">{profile.foundedYear}</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Organizations */}
-      {organizations.length > 0 && (
+      {/* Trust band: organizations edited in the admin (name, website, logo). */}
+      {partners.length > 0 && (
         <section aria-label={t("home.trustLabel")} className="border-y bg-surface/50 py-6">
-          <p className="sr-only">{t("home.trustLabel")}</p>
           <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
-            <ul className="flex w-max animate-marquee gap-14 motion-reduce:animate-none motion-reduce:flex-wrap motion-reduce:justify-center">
-              {[...organizations, ...organizations].map((name, index) => (
-                <li
-                  key={`${name}-${index}`}
-                  aria-hidden={index >= organizations.length}
-                  className="whitespace-nowrap font-heading text-xl text-muted-foreground grayscale"
-                >
-                  {name}
-                </li>
-              ))}
+            <ul className="flex w-max animate-marquee items-center gap-14 motion-reduce:animate-none motion-reduce:flex-wrap motion-reduce:justify-center">
+              {[...partners, ...partners].map((partner, index) => {
+                const content = (
+                  <span className="flex items-center gap-3 text-muted-foreground grayscale transition hover:text-foreground hover:grayscale-0">
+                    {partner.logo && (
+                      <MediaImage media={partner.logo} locale={locale} alt="" sizes="96px" className="h-9 w-auto max-w-28 bg-transparent object-contain opacity-80" />
+                    )}
+                    <span className="whitespace-nowrap font-heading text-xl">{partner.name}</span>
+                  </span>
+                );
+                return (
+                  <li key={`${partner.id}-${index}`} aria-hidden={index >= partners.length ? true : undefined}>
+                    {partner.url ? (
+                      <a href={partner.url} target="_blank" rel="noopener noreferrer" tabIndex={index >= partners.length ? -1 : undefined}>
+                        {content}
+                      </a>
+                    ) : (
+                      content
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </section>
@@ -328,6 +357,79 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* Blog */}
+      {latestPosts.length > 0 && (
+        <section className="container-site mt-24" aria-labelledby="blog">
+          <SectionLabel number={n.blog} label={t("sections.blog")} />
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionTitle>
+              <span id="blog">{t("home.blogTitle")}</span>
+            </SectionTitle>
+            <Link href="/blog" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline decoration-accent underline-offset-4">
+              {t("home.blogAll")}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {latestPosts.map((post) => (
+              <li key={post.id}>
+                <PostCard post={post} locale={locale} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Gallery */}
+      {galleryImages.length > 0 && (
+        <section className="container-site mt-24" aria-labelledby="galerie">
+          <SectionLabel number={n.gallery} label={t("sections.gallery")} />
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionTitle>
+              <span id="galerie">{t("home.galleryTitle")}</span>
+            </SectionTitle>
+            <Link href="/galerie" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline decoration-accent underline-offset-4">
+              {t("home.galleryAll")}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {galleryImages.map((image) => (
+              <li key={image.id}>
+                <Link href={{ pathname: "/galerie/[slug]", params: { slug: image.albumSlug } }} className="group block overflow-hidden rounded-xl border">
+                  <MediaImage
+                    media={image.media}
+                    locale={locale}
+                    alt={tr(image.media.alt, locale) || tr(image.caption, locale)}
+                    sizes="(min-width: 768px) 33vw, 50vw"
+                    className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Frequently asked questions */}
+      {homeFaqs.length > 0 && (
+        <section className="container-site mt-24" aria-labelledby="faq">
+          <SectionLabel number={n.faq} label={t("sections.faq")} />
+          <div className="mt-10 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+            <div>
+              <SectionTitle>
+                <span id="faq">{t("home.faqTitle")}</span>
+              </SectionTitle>
+              <Link href="/contact" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium underline decoration-accent underline-offset-4">
+                {t("home.faqAll")}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+            <FaqList items={homeFaqs} locale={locale} />
+          </div>
         </section>
       )}
 

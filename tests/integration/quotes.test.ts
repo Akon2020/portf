@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "@/server/db";
-import { clients, documentSends, quotes, users } from "@/server/db/schema";
+import { clients, documentSends, quotes, users, clientProjects, invoices, milestones } from "@/server/db/schema";
 import { renderQuotePdf } from "@/pdf/render";
 import { nextDocumentNumber } from "@/server/services/sequences";
 import {
@@ -147,9 +147,98 @@ describe.skipIf(!hasTestDatabase)("quotes", () => {
     expect(accepted.acceptedBy).toBe("Amani Bahati");
     expect(accepted.acceptedIp).toBe(meta.ip);
 
-    const clientId = await convertQuote(id, user);
-    const [client] = await getDb().select().from(clients).where(eq(clients.id, clientId));
+    const result = await convertQuote(id, user, { depositPercent: 30, milestones: true });
+    const [client] = await getDb().select().from(clients).where(eq(clients.id, result.clientId));
     expect(client.name).toBe("Coop Kivu");
+    const [project] = await getDb().select().from(clientProjects).where(eq(clientProjects.id, result.projectId));
+    expect(project.clientId).toBe(result.clientId);
+    expect(project.budget).toBe(accepted.total);
+    const projectMilestones = await getDb().select().from(milestones).where(eq(milestones.clientProjectId, result.projectId));
+    expect(projectMilestones.length).toBeGreaterThan(0);
+    const [deposit] = await getDb().select().from(invoices).where(eq(invoices.id, result.invoiceId!));
+    expect(deposit.kind).toBe("deposit");
+    expect(deposit.status).toBe("draft");
+    expect(deposit.total).toBe(Math.round(accepted.total * 0.3));
+    // Converting twice never duplicates the project.
+    expect((await convertQuote(id, user)).projectId).toBe(result.projectId);
+  });
+
+  it("follows a deposit until the whole quote is paid", async () => {
+    const user = await actor();
+    const id = await createQuoteDraft({}, user);
+    await saveQuoteDraft(id, input(), user);
+    const { quote: draft } = (await getQuote(id))!;
+    await sendQuoteByEmail(id, {}, user);
+    await acceptQuote(draft.publicToken, "Amani Bahati", meta);
+    const { invoiceId } = await convertQuote(id, user, { depositPercent: 40 });
+    const { quote } = (await getQuote(id))!;
+    const deposit = Math.round(quote.total * 0.4);
+
+    const { sendInvoiceByEmail, recordPayment, paymentInputSchema, engagementSummary, createBalanceInvoice, getInvoice } = await import("@/server/services/invoices");
+    await sendInvoiceByEmail(invoiceId!, {}, user);
+    await recordPayment(invoiceId!, paymentInputSchema.parse({ amount: String(deposit / 100), method: "mpesa", reference: "", paidAt: "2026-11-20", note: "" }), user);
+    const { invoice } = (await getInvoice(invoiceId!))!;
+    expect(invoice.status).toBe("paid");
+
+    let summary = (await engagementSummary(invoice))!;
+    expect(summary.total).toBe(quote.total);
+    expect(summary.paid).toBe(deposit);
+    expect(summary.remaining).toBe(quote.total - deposit);
+    expect(summary.toInvoice).toBe(quote.total - deposit);
+
+    const balanceId = await createBalanceInvoice(invoiceId!, user);
+    const balance = (await getInvoice(balanceId))!;
+    expect(balance.invoice.total).toBe(quote.total - deposit);
+    expect(balance.invoice.quoteId).toBe(id);
+    summary = (await engagementSummary(invoice))!;
+    expect(summary.toInvoice).toBe(0);
+    await expect(createBalanceInvoice(invoiceId!, user)).rejects.toThrow(/déjà facturé/);
+
+    await sendInvoiceByEmail(balanceId, {}, user);
+    await recordPayment(balanceId, paymentInputSchema.parse({ amount: String((quote.total - deposit) / 100), method: "cash", reference: "", paidAt: "2026-11-20", note: "" }), user);
+    summary = (await engagementSummary(invoice))!;
+    expect(summary.paid).toBe(quote.total);
+    expect(summary.remaining).toBe(0);
+  });
+
+  it("negotiates until a revised quote is accepted", async () => {
+    const user = await actor();
+    const id = await createQuoteDraft({}, user);
+    await saveQuoteDraft(id, input(), user);
+    await sendQuoteByEmail(id, {}, user);
+    const { quote } = (await getQuote(id))!;
+    const neg = await import("@/server/services/negotiation");
+    const { notifications } = await import("@/server/db/schema");
+
+    const proposal = neg.negotiationInputSchema.parse({ proposedTotal: "2 000", requestedFeatures: "Paiement Mobile Money", message: "Notre budget est plus serré, est-ce possible ?" });
+    expect(await neg.proposeNegotiation(quote.publicToken, proposal, meta)).toEqual({ ok: true });
+    let current = (await getQuote(id))!.quote;
+    expect(current.status).toBe("negotiating");
+    expect((await getDb().select().from(notifications)).some((row) => row.type === "quote_negotiation")).toBe(true);
+    expect(() => neg.negotiationInputSchema.parse({ message: "court" })).toThrow();
+
+    await clearOutbox();
+    await neg.replyToNegotiation(id, "Je peux retirer la formation pour réduire le coût.", user);
+    current = (await getQuote(id))!.quote;
+    expect(current.status).toBe("sent");
+    expect((await readOutbox())[0]).toContain("retirer la formation");
+
+    await neg.proposeNegotiation(quote.publicToken, neg.negotiationInputSchema.parse({ message: "D'accord, pouvez-vous envoyer une nouvelle version ?" }), meta);
+    const revisionId = await neg.reviseQuote(id, user);
+    expect(await neg.reviseQuote(id, user)).toBe(revisionId);
+    const revision = (await getQuote(revisionId))!.quote;
+    expect(revision.parentQuoteId).toBe(id);
+    expect(revision.revision).toBe(2);
+    await saveQuoteDraft(revisionId, input({ items: [{ description: "Application sans formation", quantity: "1", unitPrice: "2 000" }], discount: "", taxRate: "" }), user);
+    await sendQuoteByEmail(revisionId, {}, user);
+
+    expect((await getQuote(id))!.quote.status).toBe("revised");
+    expect((await neg.latestRevision(id))?.id).toBe(revisionId);
+    expect(await acceptQuote(quote.publicToken, "Amani Bahati", meta)).toEqual({ ok: false, error: "closed" });
+    const sent = (await getQuote(revisionId))!.quote;
+    const thread = await neg.negotiationThread(sent);
+    expect(thread.map((entry) => entry.author)).toEqual(["client", "admin", "client"]);
+    expect(await acceptQuote(sent.publicToken, "Amani Bahati", meta)).toEqual({ ok: true });
   });
 
   it("expires quotes past their validity", async () => {

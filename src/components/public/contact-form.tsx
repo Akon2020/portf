@@ -10,7 +10,7 @@ import { Honeypot, PublicField, Turnstile, publicInputClass } from "./form-field
 
 const TOPICS = ["project", "collaboration", "recruitment", "mentoring", "other"] as const;
 
-export function ContactForm({ formToken, siteKey, defaultTopic }: { formToken: string; siteKey: string | null; defaultTopic?: string }) {
+export function ContactForm({ formToken, siteKey, defaultTopic, bare = false }: { formToken: string; siteKey: string | null; defaultTopic?: string; bare?: boolean }) {
   const locale = useLocale() as "fr" | "en";
   const t = useTranslations("contactForm");
   const [state, action, pending] = useActionState<PublicFormState, FormData>(submitContactAction.bind(null, locale), {});
@@ -36,7 +36,7 @@ export function ContactForm({ formToken, siteKey, defaultTopic }: { formToken: s
   const describedBy = (field: string, hint = false) => (errors[field] ? `${field}-error` : hint ? `${field}-hint` : undefined);
 
   return (
-    <form onSubmit={submitWithoutReset(action)} className="relative space-y-6 rounded-2xl border bg-card/60 p-6 sm:p-8" noValidate>
+    <form onSubmit={submitWithoutReset(action)} className={bare ? "relative space-y-6" : "relative space-y-6 rounded-2xl border bg-card/60 p-6 sm:p-8"} noValidate>
       <input type="hidden" name="formToken" value={formToken} />
       <Honeypot />
       {errors.form && (

@@ -24,9 +24,9 @@ export default async function AdminProjectsPage() {
       {projects.length === 0 ? (
         <EmptyState>Aucun projet pour le moment.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-surface/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="admin-card overflow-x-auto p-2">
+          <table className="admin-table min-w-[640px]">
+            <thead>
               <tr>
                 <th className="px-4 py-3 font-medium">Projet</th>
                 <th className="px-4 py-3 font-medium">Catégories</th>

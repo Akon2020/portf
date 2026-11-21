@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import {
+  FaqForm,
   JourneyForm,
+  PartnerForm,
   ServiceForm,
   SkillForm,
   SocialForm,
@@ -13,7 +15,7 @@ import { tr } from "@/lib/localized";
 import { deleteEntityAction, saveEntityAction } from "@/server/actions/content";
 import { requireAdmin } from "@/server/auth/guards";
 import { getEntityAdmin, listLibrary, listProjectsAdmin } from "@/server/content/admin-queries";
-import type { JourneyItem, Service, Skill, SocialLink, Stat, Testimonial } from "@/server/db/schema";
+import type { Faq, JourneyItem, Partner, Service, Skill, SocialLink, Stat, Testimonial } from "@/server/db/schema";
 import { ENTITY_VIEWS, isEntityRoute } from "../config";
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -72,6 +74,12 @@ export default async function EntityEditPage({
       break;
     case "reseaux":
       form = <SocialForm action={action} row={row as SocialLink | null} />;
+      break;
+    case "faq":
+      form = <FaqForm action={action} row={row as Faq | null} />;
+      break;
+    case "partenaires":
+      form = <PartnerForm action={action} row={row as Partner | null} library={await listLibrary()} />;
       break;
   }
 

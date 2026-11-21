@@ -45,7 +45,7 @@ describe.skipIf(!hasTestDatabase)("account recovery", () => {
     await requestPasswordReset("ADMIN@example.test", meta);
     const [mail] = await readOutbox();
     expect(mail).toContain("Subject: =?UTF-8?Q?R=C3=A9initialisation");
-    const token = tokenFrom(mail, "/admin/reinitialiser");
+    const token = tokenFrom(mail, "/auth/reinitialiser");
 
     expect(await resetPassword(token, "court", "court", meta)).toMatchObject({ ok: false });
     expect(await resetPassword(token, "Nouveau mot de passe 2027", "Autre chose 2027", meta)).toMatchObject({ ok: false });
@@ -65,7 +65,7 @@ describe.skipIf(!hasTestDatabase)("account recovery", () => {
     const result = await runDueJobs({ budgetMs: 10_000 });
     expect(result.processed).toBeGreaterThanOrEqual(1);
     const [mail] = await readOutbox();
-    const token = tokenFrom(mail, "/admin/securite/revoquer");
+    const token = tokenFrom(mail, "/auth/revoquer");
     expect(await revokeSessionsWithToken(token, meta)).toBe(true);
     expect(await revokeSessionsWithToken(token, meta)).toBe(false);
     expect(await validateSessionToken(sessionToken, "admin")).toBeNull();

@@ -13,7 +13,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Nouveau devis" back={{ href: "/admin/devis/emis", label: "Devis émis" }} />
-      <form action={createQuoteDraftAction} className="max-w-lg space-y-4 rounded-xl border bg-card p-6">
+      <form action={createQuoteDraftAction} className="max-w-lg space-y-4 admin-card p-6">
         {conversation && <input type="hidden" name="conversationId" value={conversation} />}
         {demande && <input type="hidden" name="requestId" value={demande} />}
         <p className="text-sm text-muted-foreground">

@@ -31,8 +31,8 @@ export interface Actor extends RequestMeta {
   id: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
-const addDays = (date: string, days: number) => new Date(new Date(`${date}T12:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
+export const today = () => new Date().toISOString().slice(0, 10);
+export const addDays = (date: string, days: number) => new Date(new Date(`${date}T12:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
 
 export function publicQuoteUrl(token: string): string {
   return new URL(`/f/${token}`, getSiteUrl()).toString();
@@ -55,7 +55,8 @@ const money = (code: string) =>
       return cents;
     });
 
-export const quoteInputSchema = z.object({
+/** Fields shared by quotes and invoices. */
+export const documentBaseSchema = z.object({
   title: z.string().trim().min(2, "Obligatoire").max(200),
   recipientName: z.string().trim().min(2, "Obligatoire").max(160),
   recipientEmail: z
@@ -68,7 +69,6 @@ export const quoteInputSchema = z.object({
   locale: z.enum(["fr", "en"]),
   currency: z.enum(["USD", "CDF"]),
   issueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
-  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
   exchangeRate: z
     .string()
     .trim()
@@ -115,7 +115,11 @@ export const quoteInputSchema = z.object({
       });
       return items;
     }),
-}).refine((value) => value.validUntil >= value.issueDate, { message: "La validité doit suivre la date d'émission", path: ["validUntil"] });
+});
+
+export const quoteInputSchema = documentBaseSchema
+  .extend({ validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide") })
+  .refine((value) => value.validUntil >= value.issueDate, { message: "La validité doit suivre la date d'émission", path: ["validUntil"] });
 
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 
@@ -236,7 +240,7 @@ async function lockAsSent(id: string): Promise<Quote> {
   return getDb().transaction(async (tx) => {
     const [quote] = await tx.select().from(quotes).where(eq(quotes.id, id)).for("update");
     if (!quote || quote.deletedAt) throw new QuoteError("Devis introuvable.");
-    if (["accepted", "declined", "expired"].includes(quote.status)) throw new QuoteError("Ce devis est clôturé.");
+    if (["accepted", "declined", "expired", "revised"].includes(quote.status)) throw new QuoteError("Ce devis est clôturé.");
     const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(quoteItems).where(eq(quoteItems.quoteId, id));
     if (count === 0) throw new QuoteError("Ajoutez au moins une ligne avant l'envoi.");
     if (quote.number) return quote;
@@ -247,6 +251,10 @@ async function lockAsSent(id: string): Promise<Quote> {
       .where(eq(quotes.id, id))
       .returning();
     if (updated.quoteRequestId) await tx.update(quoteRequests).set({ status: "quoted" }).where(eq(quoteRequests.id, updated.quoteRequestId));
+    // A sent revision replaces the previous version for the client.
+    if (updated.parentQuoteId) {
+      await tx.update(quotes).set({ status: "revised" }).where(and(eq(quotes.id, updated.parentQuoteId), inArray(quotes.status, ["sent", "viewed", "negotiating"])));
+    }
     return updated;
   });
 }
@@ -330,6 +338,13 @@ export function isExpired(quote: Pick<Quote, "validUntil">): boolean {
 }
 
 async function notifyOwner(title: string, quote: Quote, extra: [string, string][]) {
+  const { notifyAdmins } = await import("./notifications");
+  await notifyAdmins({
+    type: quote.status === "accepted" ? "quote_accepted" : "quote_declined",
+    title: `${title} : ${quote.number ?? ""}`,
+    body: `${quote.recipientName}, ${formatMoney(quote.total, quote.currency)}`,
+    url: `/admin/devis/emis/${quote.id}`,
+  });
   const issuer = await readSettingUncached("issuer");
   const to = process.env.ADMIN_EMAIL || issuer.email;
   if (!to) return;
@@ -353,12 +368,12 @@ export async function acceptQuote(token: string, signerName: string, meta: Reque
   const found = await getQuoteByToken(token);
   if (!found) return { ok: false, error: "invalid" };
   const { quote } = found;
-  if (!["sent", "viewed"].includes(quote.status)) return { ok: false, error: "closed" };
+  if (!["sent", "viewed", "negotiating"].includes(quote.status)) return { ok: false, error: "closed" };
   if (isExpired(quote)) return { ok: false, error: "expired" };
   const [updated] = await getDb()
     .update(quotes)
     .set({ status: "accepted", acceptedAt: new Date(), acceptedBy: name, acceptedIp: meta.ip })
-    .where(and(eq(quotes.id, quote.id), inArray(quotes.status, ["sent", "viewed"])))
+    .where(and(eq(quotes.id, quote.id), inArray(quotes.status, ["sent", "viewed", "negotiating"])))
     .returning();
   if (!updated) return { ok: false, error: "closed" };
   if (updated.quoteRequestId) await getDb().update(quoteRequests).set({ status: "won" }).where(eq(quoteRequests.id, updated.quoteRequestId));
@@ -373,7 +388,7 @@ export async function declineQuote(token: string, meta: RequestMeta): Promise<De
   const [updated] = await getDb()
     .update(quotes)
     .set({ status: "declined", declinedAt: new Date() })
-    .where(and(eq(quotes.id, found.quote.id), inArray(quotes.status, ["sent", "viewed"])))
+    .where(and(eq(quotes.id, found.quote.id), inArray(quotes.status, ["sent", "viewed", "negotiating"])))
     .returning();
   if (!updated) return { ok: false, error: "closed" };
   if (updated.quoteRequestId) await getDb().update(quoteRequests).set({ status: "lost" }).where(eq(quoteRequests.id, updated.quoteRequestId));
@@ -392,16 +407,70 @@ export async function expireQuotes(): Promise<number> {
   return rows.length;
 }
 
+export interface ConversionResult {
+  clientId: string;
+  projectId: string;
+  invoiceId: string | null;
+}
+
 /**
- * Accepted quote: creates or links the client. Client project, milestones and
- * deposit invoice are added by the CRM and invoicing module.
+ * Accepted quote, in one step: client (created or linked), client project,
+ * optional milestones (one per quote line) and optional deposit invoice draft.
  */
-export async function convertQuote(id: string, actor: Actor): Promise<string> {
+export async function convertQuote(
+  id: string,
+  actor: Actor,
+  options: { depositPercent?: number; milestones?: boolean } = {},
+): Promise<ConversionResult> {
   const db = getDb();
   const data = await getQuote(id);
   if (!data) throw new QuoteError("Devis introuvable.");
-  const { quote } = data;
+  const { quote, items } = data;
   if (quote.status !== "accepted") throw new QuoteError("Seul un devis accepté peut être converti.");
+  if (quote.convertedAt && quote.clientId && quote.clientProjectId) {
+    return { clientId: quote.clientId, projectId: quote.clientProjectId, invoiceId: null };
+  }
+  const clientId = await ensureClient(quote, actor);
+  const { clientProjects, milestones } = await import("../db/schema");
+  const [project] = await db
+    .insert(clientProjects)
+    .values({
+      clientId,
+      name: quote.title,
+      description: quote.notes,
+      status: "planned",
+      startDate: today(),
+      budget: quote.total,
+      currency: quote.currency,
+      visibleToClient: true,
+      quoteId: quote.id,
+    })
+    .returning({ id: clientProjects.id });
+  if (options.milestones && items.length > 0) {
+    await db.insert(milestones).values(
+      items.map((item, index) => ({ clientProjectId: project.id, title: item.description.slice(0, 200), amount: item.total, sortOrder: index, visibleToClient: true })),
+    );
+  }
+  let invoiceId: string | null = null;
+  if (options.depositPercent && options.depositPercent > 0) {
+    const { createInvoiceDraft } = await import("./invoices");
+    invoiceId = await createInvoiceDraft({ clientId, clientProjectId: project.id, quoteId: quote.id, depositPercent: options.depositPercent }, actor);
+  }
+  await db.update(quotes).set({ clientId, clientProjectId: project.id, convertedAt: new Date() }).where(eq(quotes.id, id));
+  await writeAudit({
+    actorId: actor.id,
+    action: "quote.converted",
+    entityType: "quote",
+    entityId: id,
+    diff: { clientId, projectId: project.id, invoiceId },
+    ip: actor.ip,
+    userAgent: actor.userAgent,
+  });
+  return { clientId, projectId: project.id, invoiceId };
+}
+
+async function ensureClient(quote: Quote, actor: Actor): Promise<string> {
+  const db = getDb();
   let clientId = quote.clientId;
   if (!clientId && quote.contactId) clientId = await convertContactToClient(quote.contactId, actor.id, actor);
   if (!clientId) {
@@ -411,8 +480,6 @@ export async function convertQuote(id: string, actor: Actor): Promise<string> {
       .returning({ id: clients.id });
     clientId = client.id;
   }
-  await db.update(quotes).set({ clientId, convertedAt: new Date() }).where(eq(quotes.id, id));
-  await writeAudit({ actorId: actor.id, action: "quote.converted", entityType: "quote", entityId: id, diff: { clientId }, ip: actor.ip, userAgent: actor.userAgent });
   return clientId;
 }
 

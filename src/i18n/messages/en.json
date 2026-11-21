@@ -13,7 +13,13 @@
     "close": "Close menu",
     "skip": "Skip to content",
     "main": "Main navigation",
-    "quote": "Quote"
+    "quote": "Quote",
+    "blog": "Blog",
+    "gallery": "Gallery",
+    "portal": "Client area",
+    "quoteCta": "Request a quote",
+    "workWithMe": "Work with me",
+    "adminSpace": "Admin space"
   },
   "theme": {
     "toggle": "Change theme",
@@ -32,7 +38,8 @@
     "ctaSecondary": "See my projects",
     "basedIn": "Based in",
     "since": "Since",
-    "portraitAlt": "Portrait of Isaac Akonkwa"
+    "portraitAlt": "Portrait of Isaac Akonkwa",
+    "workWithMe": "Work with me"
   },
   "sections": {
     "profile": "Profile",
@@ -41,7 +48,10 @@
     "journey": "Journey",
     "stack": "Tech stack",
     "testimonials": "Testimonials",
-    "contact": "Contact"
+    "contact": "Contact",
+    "blog": "Blog",
+    "gallery": "Gallery",
+    "faq": "FAQ"
   },
   "home": {
     "trustLabel": "Organizations and communities",
@@ -54,7 +64,13 @@
     "journeyTitle": "A path shaped by learning and impact.",
     "stackTitle": "Tools chosen to solve the right problems, not to fill a list.",
     "testimonialsTitle": "What people who worked with me say.",
-    "otherNeed": "Something different in mind? Let’s talk."
+    "otherNeed": "Something different in mind? Let’s talk.",
+    "blogTitle": "Field notes on code, security and product.",
+    "blogAll": "All articles",
+    "galleryTitle": "Workshops, talks and community moments.",
+    "galleryAll": "See the gallery",
+    "faqTitle": "Answers to the questions I hear the most.",
+    "faqAll": "All questions"
   },
   "journey": {
     "filterLabel": "Filter the journey",
@@ -176,7 +192,15 @@
     "socials": "Social",
     "formSoon": "The contact form is coming very soon. In the meantime, write to me directly by email or on WhatsApp.",
     "writeMe": "Write to me",
-    "whatsappMessage": "Hello Isaac, I am reaching out from your website."
+    "whatsappMessage": "Hello Isaac, I am reaching out from your website.",
+    "label": "Work with me",
+    "faqLabel": "FAQ",
+    "faqTitle": "Before you write",
+    "faqIntro": "Answers to the questions I am asked most often. Cannot find yours? Write to me directly.",
+    "quoteTitle": "A well defined project?",
+    "quoteText": "The quote form gives me everything I need to reply with a priced proposal.",
+    "quoteCta": "Request a quote",
+    "formTitle": "Send a message"
   },
   "about": {
     "title": "About",
@@ -326,5 +350,46 @@
       "network": "Unable to send right now. Check your connection and try again."
     },
     "remove": "Remove"
+  },
+  "blog": {
+    "title": "Blog",
+    "intro": "Lessons learned, practical guides and thoughts on web, mobile, AI and security.",
+    "search": "Search articles",
+    "searchButton": "Search",
+    "all": "All",
+    "categories": "Categories",
+    "tags": "Tags",
+    "empty": "No article matches this search.",
+    "emptyAll": "The first articles are coming soon.",
+    "readingTime": "{minutes} min read",
+    "read": "Read the article",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageOf": "Page {current} of {total}",
+    "pagination": "Pagination",
+    "back": "All articles",
+    "toc": "Contents",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "shareOn": "Share on {network}",
+    "related": "Read next",
+    "publishedOn": "Published on {date}",
+    "updatedOn": "Updated on {date}",
+    "onlyEnglish": "This article is only available in English.",
+    "onlyFrench": "This article is only available in French.",
+    "authorTitle": "About the author",
+    "rss": "RSS feed",
+    "resultsFor": "Results for “{query}”",
+    "filteredBy": "Filtered by {filter}",
+    "clear": "Clear filters"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "intro": "Talks, workshops and community moments, from Bukavu to Bujumbura.",
+    "empty": "The first albums are coming soon.",
+    "photos": "{count, plural, =0 {No photos} one {# photo} other {# photos}}",
+    "back": "All albums",
+    "view": "View the album"
   }
 }

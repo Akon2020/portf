@@ -1,127 +1,349 @@
-import { and, count, desc, eq, isNull } from "drizzle-orm";
-import { ShieldCheck } from "lucide-react";
+import { ArrowUpRight, FileText, Inbox, ListChecks, Newspaper, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { Badge } from "@/components/admin/ui";
+import { formatMoney } from "@/lib/money";
 import { requireAdmin } from "@/server/auth/guards";
-import { reviewQueue } from "@/server/content/admin-queries";
-import { getDb } from "@/server/db";
-import { backupCodes, loginAttempts } from "@/server/db/schema";
+import { AreaChart, BarChart, Donut } from "@/components/admin/charts";
+import { actionLabel, dashboardCharts, dashboardData } from "@/server/content/dashboard";
+import { REQUEST_LABELS } from "@/server/services/quote-requests";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
-const dateTime = new Intl.DateTimeFormat("fr-FR", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Africa/Lubumbashi",
-});
+const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Lubumbashi" });
+const longDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "Africa/Lubumbashi" });
+const hourFormat = new Intl.DateTimeFormat("fr-FR", { hour: "numeric", hour12: false, timeZone: "Africa/Lubumbashi" });
 
-const REASON_LABELS: Record<string, string> = {
-  password_ok: "Mot de passe correct",
-  totp_ok: "Code TOTP valide",
-  totp_setup_ok: "2FA activée",
-  backup_code_ok: "Code de secours utilisé",
-  wrong_password: "Mot de passe incorrect",
-  unknown_email: "E-mail inconnu",
-  rate_limited: "Limite de débit atteinte",
-  locked: "Compte verrouillé",
-  locked_now: "Verrouillage déclenché",
-  totp_invalid: "Code TOTP invalide",
-  totp_replay: "Code TOTP rejoué",
-  totp_rate_limited: "Trop de codes TOTP",
-  backup_code_invalid: "Code de secours invalide",
-  not_allowed: "Compte non autorisé",
-  totp_setup_invalid: "Code de configuration invalide",
-};
+const MESSAGE_TONES = { new: "info", open: "warning", replied: "success", closed: "neutral", spam: "danger" } as const;
+const MESSAGE_LABELS = { new: "Nouveau", open: "Ouvert", replied: "Répondu", closed: "Fermé", spam: "Spam" } as const;
 
-export default async function AdminDashboardPage() {
-  const { user } = await requireAdmin();
-  const db = getDb();
-
-  const [[{ remaining }], attempts, queue] = await Promise.all([
-    db
-      .select({ remaining: count() })
-      .from(backupCodes)
-      .where(and(eq(backupCodes.userId, user.id), isNull(backupCodes.usedAt))),
-    db.select().from(loginAttempts).orderBy(desc(loginAttempts.createdAt)).limit(10),
-    reviewQueue(),
-  ]);
-  const toReview = queue.projects.length + queue.journey.length + queue.testimonials.length + queue.media.length;
-
+function StatCard({
+  label,
+  value,
+  hint,
+  href,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint: string;
+  href: string;
+  icon: typeof Inbox;
+  tone: string;
+}) {
   return (
-    <div className="space-y-8">
+    <Link href={href} className="admin-card group flex min-w-0 flex-col justify-between gap-3 p-4 transition-shadow hover:shadow-md sm:gap-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <span className={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-10 ${tone}`}>
+          <Icon className="size-[18px]" aria-hidden="true" />
+        </span>
+      </div>
       <div>
-        <h1 className="font-sans text-3xl font-semibold tracking-tight">Tableau de bord</h1>
-        <p className="mt-1 text-muted-foreground">
-          Visites, messages, devis, factures et tâches arriveront avec les prochaines phases.
+        <p className="break-words text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl">{value}</p>
+        <p className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+          {hint}
+          <ArrowUpRight className="size-4 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
         </p>
       </div>
+    </Link>
+  );
+}
 
-      {toReview > 0 && (
-        <Link
-          href="/admin/a-valider"
-          className="flex items-center justify-between gap-4 rounded-xl border border-warning/40 bg-warning/5 p-5 hover:bg-warning/10"
-        >
-          <span>
-            <span className="block font-medium">{toReview} éléments à valider</span>
-            <span className="block text-sm text-muted-foreground">Contenus importés ou incohérents à confirmer avant publication.</span>
+function Panel({ title, href, linkLabel, children }: { title: string; href?: string; linkLabel?: string; children: React.ReactNode }) {
+  return (
+    <section className="admin-card flex min-w-0 flex-col p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold">{title}</h2>
+        {href && (
+          <Link href={href} className="text-sm font-medium text-accent hover:underline">
+            {linkLabel ?? "Tout voir"}
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export default async function DashboardPage() {
+  const { user } = await requireAdmin();
+  const [data, charts] = await Promise.all([dashboardData(user.id), dashboardCharts()]);
+  const dayTick = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+  const monthTick = new Intl.DateTimeFormat("fr-FR", { month: "short", timeZone: "UTC" });
+  const monthLong = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+  const visits = charts.visits.map((row, index) => ({
+    label: row.day,
+    tick: index % 7 === 0 || index === charts.visits.length - 1 ? dayTick.format(new Date(`${row.day}T12:00:00Z`)) : "",
+    value: row.views,
+  }));
+  const totalVisits = charts.visits.reduce((sum, row) => sum + row.views, 0);
+  const currencies = (["USD", "CDF"] as const).filter((currency) => charts.revenue.some((row) => row.currency === currency && row.amount > 0));
+  const revenueCurrencies = currencies.length ? currencies : (["USD"] as const);
+  const STATUS_FR: Record<string, string> = {
+    draft: "Brouillon", sent: "Envoyé", viewed: "Consulté", accepted: "Accepté", declined: "Refusé", expired: "Expiré", negotiating: "En négociation", revised: "Révisé",
+    partially_paid: "Partiel", paid: "Payée", overdue: "En retard", cancelled: "Annulée",
+    new: "Nouvelle", reviewing: "En analyse", quoted: "Devis envoyé", won: "Gagnée", lost: "Perdue",
+    todo: "À faire", in_progress: "En cours", blocked: "Bloquée", done: "Terminée",
+  };
+  const segments = (rows: { status: string; count: number }[]) => rows.map((row) => ({ label: STATUS_FR[row.status] ?? row.status, value: row.count })).sort((a, b) => b.value - a.value);
+  const now = new Date();
+  const hour = Number(hourFormat.format(now));
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const firstName = user.name.split(" ")[0];
+  const pending = data.quotesByCurrency.filter((row) => row.pending > 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground first-letter:uppercase">{longDate.format(now)}</p>
+        </div>
+      </div>
+
+      {!data.account?.totpEnabledAt && (
+        <Link href="/admin/securite" className="admin-card flex items-center gap-4 border-warning/40 p-4 hover:shadow-md">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-warning/10 text-warning">
+            <ShieldAlert className="size-5" aria-hidden="true" />
           </span>
-          <span className="text-sm font-medium text-warning">Ouvrir</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium">Double authentification désactivée</span>
+            <span className="block text-sm text-muted-foreground">Activez-la pour protéger le compte en cas de vol du mot de passe.</span>
+          </span>
+          <span className="hidden text-sm font-medium text-accent sm:block">Activer</span>
         </Link>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-success" aria-hidden="true" />
-              Sécurité du compte
-            </CardTitle>
-            <CardDescription>{user.email}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-              <dt className="text-muted-foreground">Double authentification</dt>
-              <dd>{user.totpEnabledAt ? `Active depuis le ${dateTime.format(user.totpEnabledAt)}` : "Inactive"}</dd>
-              <dt className="text-muted-foreground">Codes de secours restants</dt>
-              <dd className={remaining <= 3 ? "font-medium text-destructive" : undefined}>{remaining} sur 10</dd>
-              <dt className="text-muted-foreground">Dernière connexion</dt>
-              <dd>
-                {user.lastLoginAt ? `${dateTime.format(user.lastLoginAt)} (${user.lastLoginIp ?? "IP inconnue"})` : "Aucune"}
-              </dd>
-            </dl>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard
+          label="Messages à traiter"
+          value={data.totals.open_messages}
+          hint={`${data.totals.new_messages} nouveaux`}
+          href="/admin/messagerie"
+          icon={Inbox}
+          tone="bg-info/10 text-info"
+        />
+        <StatCard
+          label="Demandes de devis"
+          value={data.totals.new_requests}
+          hint="Nouvelles ou en analyse"
+          href="/admin/devis"
+          icon={FileText}
+          tone="bg-accent/10 text-accent"
+        />
+        <StatCard
+          label="Devis en attente"
+          value={pending.length ? pending.map((row) => formatMoney(row.pending, row.currency)).join(" · ") : "0"}
+          hint={`${pending.reduce((sum, row) => sum + row.count, 0)} devis envoyés sans réponse`}
+          href="/admin/devis/emis"
+          icon={FileText}
+          tone="bg-success/10 text-success"
+        />
+        <StatCard
+          label="À valider"
+          value={data.totals.to_review}
+          hint={`${data.totals.published_projects} projets et ${data.totals.published_posts} articles publiés`}
+          href="/admin/a-valider"
+          icon={ListChecks}
+          tone="bg-warning/10 text-warning"
+        />
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Dernières tentatives de connexion</CardTitle>
-            <CardDescription>Le journal complet sera disponible dans Monitoring.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {attempts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune tentative enregistrée.</p>
-            ) : (
-              <ul className="divide-y text-sm">
-                {attempts.map((attempt) => (
-                  <li key={attempt.id} className="flex items-center justify-between gap-3 py-2">
-                    <span className="min-w-0">
-                      <span className={attempt.success ? "text-success" : "text-destructive"}>
-                        {REASON_LABELS[attempt.reason ?? ""] ?? attempt.reason}
-                      </span>
-                      <span className="block truncate font-mono text-xs text-muted-foreground">
-                        {attempt.email} · {attempt.ip}
-                      </span>
+      <div className="grid gap-4 *:min-w-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Panel title="Visites des 30 derniers jours" href="/admin/monitoring" linkLabel="Audience">
+          <p className="-mt-2 mb-3 text-sm text-muted-foreground">{totalVisits.toLocaleString("fr-FR")} pages vues</p>
+          <AreaChart points={visits} caption="Pages vues par jour sur les 30 derniers jours" />
+        </Panel>
+        <Panel title="Encaissements sur 12 mois" href="/admin/facturation/rapports" linkLabel="Rapports">
+          <div className="space-y-5">
+            {revenueCurrencies.map((currency) => (
+              <div key={currency}>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">{currency}</p>
+                <BarChart
+                  caption={`Encaissements mensuels en ${currency}`}
+                  format={(value) => formatMoney(value, currency)}
+                  tone={currency === "USD" ? "bg-success/80" : "bg-info/80"}
+                  points={charts.revenue
+                    .filter((row) => row.currency === currency)
+                    .map((row, index) => ({
+                      label: monthLong.format(new Date(`${row.month}-15T12:00:00Z`)),
+                      tick: index % 2 === 0 ? monthTick.format(new Date(`${row.month}-15T12:00:00Z`)) : "",
+                      value: row.amount,
+                    }))}
+                />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 *:min-w-0 md:grid-cols-2 2xl:grid-cols-4">
+        <Panel title="Demandes de devis" href="/admin/devis">
+          <Donut segments={segments(charts.requestStatuses)} caption="Demandes de devis par statut" centerLabel="demandes" />
+        </Panel>
+        <Panel title="Devis émis" href="/admin/devis/emis">
+          <Donut segments={segments(charts.quoteStatuses)} caption="Devis émis par statut" centerLabel="devis" />
+        </Panel>
+        <Panel title="Factures" href="/admin/facturation">
+          <Donut segments={segments(charts.invoiceStatuses)} caption="Factures par statut" centerLabel="factures" />
+        </Panel>
+        <Panel title="Tâches" href="/admin/taches">
+          <Donut segments={segments(charts.taskStatuses)} caption="Tâches par statut" centerLabel="tâches" />
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Panel title="Derniers messages" href="/admin/messagerie">
+          {data.recentMessages.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucun message pour le moment.</p>
+          ) : (
+            <ul className="-mx-2 divide-y">
+              {data.recentMessages.map((message) => (
+                <li key={message.id}>
+                  <Link href={`/admin/messagerie/${message.id}`} className="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-surface/60">
+                    <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-semibold">
+                      {message.name.slice(0, 1).toUpperCase()}
                     </span>
-                    <time className="shrink-0 text-xs text-muted-foreground" dateTime={attempt.createdAt.toISOString()}>
-                      {dateTime.format(attempt.createdAt)}
-                    </time>
-                  </li>
-                ))}
-              </ul>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{message.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{message.subject}</span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <Badge tone={MESSAGE_TONES[message.status]}>{MESSAGE_LABELS[message.status]}</Badge>
+                      <time className="text-[11px] text-muted-foreground" dateTime={message.at.toISOString()}>
+                        {dateTime.format(message.at)}
+                      </time>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Activité récente">
+          {data.activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune activité enregistrée.</p>
+          ) : (
+            <ol className="space-y-3">
+              {data.activity.map((entry) => (
+                <li key={entry.id} className="flex gap-3">
+                  <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
+                  <span className="min-w-0 flex-1 text-sm">
+                    <span className="block">{actionLabel(entry.action)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {entry.actor ?? "Visiteur ou système"} · {dateTime.format(entry.at)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Panel title="Dernières demandes de devis" href="/admin/devis">
+          {data.recentRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune demande pour le moment.</p>
+          ) : (
+            <div className="-mx-2 overflow-x-auto">
+              <table className="admin-table min-w-[520px]">
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Projet</th>
+                    <th>Budget</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recentRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        <Link href={`/admin/devis/${request.id}`} className="font-medium hover:text-accent">
+                          {request.company ?? request.name}
+                        </Link>
+                      </td>
+                      <td className="text-muted-foreground">{REQUEST_LABELS.projectType[request.type as keyof typeof REQUEST_LABELS.projectType] ?? request.type}</td>
+                      <td className="whitespace-nowrap text-muted-foreground">{REQUEST_LABELS.budget[request.budget as keyof typeof REQUEST_LABELS.budget] ?? "Non précisé"}</td>
+                      <td>
+                        <Badge tone={request.status === "won" ? "success" : request.status === "lost" ? "danger" : "info"}>{REQUEST_LABELS.status[request.status]}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Sécurité" href="/admin/securite" linkLabel="Gérer">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Double authentification</dt>
+            <dd className="flex items-center gap-1.5">
+              {data.account?.totpEnabledAt ? (
+                <>
+                  <ShieldCheck className="size-4 text-success" aria-hidden="true" /> Active
+                </>
+              ) : (
+                <Badge tone="warning">Désactivée</Badge>
+              )}
+            </dd>
+            {data.account?.totpEnabledAt && (
+              <>
+                <dt className="text-muted-foreground">Codes de secours</dt>
+                <dd>{data.totals.backup_codes} sur 10</dd>
+              </>
             )}
-          </CardContent>
-        </Card>
+            <dt className="text-muted-foreground">Événements (24 h)</dt>
+            <dd>
+              <Link href="/admin/monitoring/securite" className="hover:text-accent">
+                {data.totals.security_events}
+              </Link>
+            </dd>
+            <dt className="text-muted-foreground">IP bannies actives</dt>
+            <dd>
+              <Link href="/admin/monitoring/bannissements" className="hover:text-accent">
+                {data.totals.active_bans}
+              </Link>
+            </dd>
+            <dt className="text-muted-foreground">Dernière connexion</dt>
+            <dd>{data.account?.lastLoginAt ? `${dateTime.format(data.account.lastLoginAt)}` : "Aucune"}</dd>
+          </dl>
+          <ul className="mt-4 space-y-2 border-t pt-4 text-xs">
+            {data.attempts.map((attempt) => (
+              <li key={attempt.id} className="flex items-center justify-between gap-3">
+                <span className={attempt.success ? "text-success" : "text-destructive"}>{attempt.success ? "Réussie" : "Échouée"}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">{attempt.ip}</span>
+                <time className="shrink-0 text-muted-foreground" dateTime={attempt.createdAt.toISOString()}>
+                  {dateTime.format(attempt.createdAt)}
+                </time>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Link href="/admin/taches" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md sm:col-span-3">
+          <ListChecks className="size-5 text-accent" aria-hidden="true" /> Tâches du jour : {data.totals.tasks_today}
+          <span className={`ml-auto text-xs ${data.totals.tasks_overdue ? "font-medium text-destructive" : "text-muted-foreground"}`}>{data.totals.tasks_overdue} en retard</span>
+        </Link>
+        <Link href="/admin/blog/nouveau" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md">
+          <Newspaper className="size-5 text-accent" aria-hidden="true" /> Écrire un article
+          <span className="ml-auto text-xs text-muted-foreground">{data.totals.draft_posts} brouillons</span>
+        </Link>
+        <Link href="/admin/contenu/projets/nouveau" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md">
+          <FileText className="size-5 text-accent" aria-hidden="true" /> Ajouter un projet
+        </Link>
+        <Link href="/admin/devis/emis/nouveau" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md">
+          <FileText className="size-5 text-accent" aria-hidden="true" /> Créer un devis
+        </Link>
       </div>
     </div>
   );

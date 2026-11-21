@@ -15,7 +15,7 @@ export async function prepareTestDatabase(): Promise<void> {
     migrated = true;
   }
   await getDb().execute(sql`
-    truncate table gallery_items, gallery_albums, posts, document_sends, quote_items, quotes, sequences, quote_requests, messages, conversations, contacts, clients, project_images, projects, journey_items, skills, services, testimonials, social_links, stats, media, users, sessions, auth_tokens, backup_codes, trusted_ips, login_attempts,
+    truncate table faqs, partners, notifications, quote_negotiations, page_views, analytics_events, daily_stats, security_events, ip_reputation, ip_bans, ip_allowlist, error_logs, push_subscriptions, reminders, tasks, receipts, payments, invoice_items, invoices, project_files, project_updates, milestones, client_projects, gallery_items, gallery_albums, posts, document_sends, quote_items, quotes, sequences, quote_requests, messages, conversations, contacts, clients, project_images, projects, journey_items, skills, services, testimonials, social_links, stats, media, users, sessions, auth_tokens, backup_codes, trusted_ips, login_attempts,
       audit_logs, settings, rate_limits, jobs, cron_runs restart identity cascade
   `);
 }

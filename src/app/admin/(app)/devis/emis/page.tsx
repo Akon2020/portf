@@ -35,9 +35,9 @@ export default async function IssuedQuotesPage() {
       {rows.length === 0 ? (
         <EmptyState>Aucun devis pour le moment. Créez-en un depuis une demande, une conversation ou ce bouton.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[680px] text-sm">
-            <thead className="bg-surface/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="admin-card overflow-x-auto p-2">
+          <table className="admin-table min-w-[680px]">
+            <thead>
               <tr>
                 <th className="px-4 py-3 font-medium">Numéro</th>
                 <th className="px-4 py-3 font-medium">Client et objet</th>

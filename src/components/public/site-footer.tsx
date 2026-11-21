@@ -33,6 +33,8 @@ export async function SiteFooter({ locale }: { locale: string }) {
             <li><Link href="/a-propos" className="hover:text-accent">{nav("about")}</Link></li>
             <li><Link href="/projets" className="hover:text-accent">{nav("projects")}</Link></li>
             <li><Link href="/services" className="hover:text-accent">{nav("services")}</Link></li>
+            <li><Link href="/blog" className="hover:text-accent">{nav("blog")}</Link></li>
+            <li><Link href="/galerie" className="hover:text-accent">{nav("gallery")}</Link></li>
             <li><Link href="/contact" className="hover:text-accent">{nav("contact")}</Link></li>
           </ul>
         </nav>

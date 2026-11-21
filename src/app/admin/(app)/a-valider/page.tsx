@@ -18,7 +18,7 @@ function Group({ title, count, children }: { title: string; count: number; child
       <h2 className="font-sans text-lg font-semibold tracking-normal">
         {title} <span className="font-mono text-sm text-muted-foreground">{count}</span>
       </h2>
-      <ul className="divide-y overflow-hidden rounded-xl border">{children}</ul>
+      <ul className="admin-card divide-y overflow-hidden">{children}</ul>
     </section>
   );
 }

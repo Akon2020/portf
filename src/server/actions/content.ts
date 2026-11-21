@@ -28,7 +28,7 @@ import {
   projectSchema,
   serviceSchema,
   skillSchema,
-  socialLinkSchema,
+  socialLinkSchema, faqSchema, partnerSchema,
   statSchema,
   testimonialSchema,
 } from "../content/schemas";
@@ -58,7 +58,7 @@ function failure(error: unknown): FormState {
 const INVALID = "Le formulaire contient des erreurs.";
 
 /** Entity names as they appear in admin URLs. */
-export type EntityRoute = "parcours" | "competences" | "services" | "temoignages" | "chiffres" | "reseaux";
+export type EntityRoute = "parcours" | "competences" | "services" | "temoignages" | "chiffres" | "reseaux" | "faq" | "partenaires";
 
 const ENTITY_CONFIG = {
   parcours: { entity: "journey", schema: journeySchema, booleans: ["needsReview"] },
@@ -67,6 +67,8 @@ const ENTITY_CONFIG = {
   temoignages: { entity: "testimonial", schema: testimonialSchema, booleans: ["needsReview"] },
   chiffres: { entity: "stat", schema: statSchema, booleans: ["isVisible"] },
   reseaux: { entity: "social", schema: socialLinkSchema, booleans: ["isVisible"] },
+  faq: { entity: "faq", schema: faqSchema, booleans: ["isVisible", "showOnHome"] },
+  partenaires: { entity: "partner", schema: partnerSchema, booleans: ["isVisible"] },
 } as const satisfies Record<EntityRoute, { entity: SimpleEntityName; schema: unknown; booleans: string[] }>;
 
 // Projects
@@ -106,7 +108,9 @@ export async function saveEntityAction(
   formData: FormData,
 ): Promise<FormState> {
   const actor = await currentActor();
-  const config = ENTITY_CONFIG[route];
+  const config = ENTITY_CONFIG[route] as (typeof ENTITY_CONFIG)[EntityRoute] | undefined;
+  // An outdated page or server build can send a type this version does not know.
+  if (!config) return { ok: false, message: "Type de contenu inconnu : rechargez la page puis réessayez." };
   const parsed = config.schema.safeParse(parseFormData(formData, { booleans: [...config.booleans] }));
   if (!parsed.success) return { ok: false, message: INVALID, errors: issuesToErrors(parsed.error.issues) };
   let entityId: string;
@@ -120,7 +124,9 @@ export async function saveEntityAction(
 }
 
 export async function deleteEntityAction(route: EntityRoute, id: string): Promise<void> {
-  await deleteEntity(ENTITY_CONFIG[route].entity, id, await currentActor());
+  const config = ENTITY_CONFIG[route] as (typeof ENTITY_CONFIG)[EntityRoute] | undefined;
+  if (!config) redirect("/admin/contenu");
+  await deleteEntity(config.entity, id, await currentActor());
   redirect(`/admin/contenu/${route}`);
 }
 
@@ -153,7 +159,15 @@ function cleanDeep(value: unknown): unknown {
   return value;
 }
 
-const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = { profile: ["available"], contact: [], legal: [], cv: [], templates: [], issuer: [] };
+const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = {
+  profile: ["available"],
+  contact: [],
+  legal: [],
+  cv: [],
+  templates: [],
+  issuer: [],
+  security: ["alertOnCritical", "alertOnAutoBan", "trackAudience"],
+};
 
 export async function saveSettingsAction(key: SettingsKey, _state: FormState, formData: FormData): Promise<FormState> {
   const actor = await currentActor();
@@ -164,7 +178,7 @@ export async function saveSettingsAction(key: SettingsKey, _state: FormState, fo
   if (key === "profile" && Array.isArray(raw.values)) {
     raw.values = (raw.values as { title?: { fr?: string } }[]).filter((value) => value?.title?.fr?.trim());
   }
-  for (const field of ["portraitMediaId", "frMediaId", "enMediaId"]) {
+  for (const field of ["portraitMediaId", "frMediaId", "enMediaId", "logoMediaId"]) {
     if (raw[field] === "") raw[field] = null;
   }
   const parsed = SETTINGS_SCHEMAS[key].safeParse(cleanDeep(raw));

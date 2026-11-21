@@ -71,7 +71,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         }
       />
 
-      <div className="grid gap-8 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-8 *:min-w-0 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           <ol className="space-y-4">
             {thread.map(({ message, authorName }) => {
@@ -128,7 +128,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         </div>
 
         {quoteRequest && (
-          <aside className="space-y-3 rounded-xl border bg-card p-5 xl:sticky xl:top-6 xl:self-start">
+          <aside className="space-y-3 admin-card p-5 xl:sticky xl:top-6 xl:self-start">
             <h2 className="flex items-center gap-2 font-sans text-base font-semibold tracking-normal">
               <FileText className="size-4 text-accent" aria-hidden="true" />
               Demande de devis

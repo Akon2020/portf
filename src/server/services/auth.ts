@@ -2,12 +2,20 @@ import { and, count, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { backupCodes, loginAttempts, trustedIps, users, type User } from "../db/schema";
 import { decryptSecret, encryptSecret, sha256 } from "../auth/crypto";
-import { hashPassword, needsRehash, verifyDummyPassword, verifyPassword } from "../auth/password";
+import {
+  PASSWORD_ISSUE_MESSAGES,
+  checkPasswordPolicy,
+  hashPassword,
+  needsRehash,
+  verifyDummyPassword,
+  verifyPassword,
+} from "../auth/password";
 import { SESSION_POLICIES, computeLockout } from "../auth/policy";
 import { RATE_LIMITS, consumeRateLimit, resetRateLimit } from "../auth/rate-limit";
 import {
   createSession,
   revokeSessionById,
+  revokeUserSessions,
   validateSessionToken,
   type ValidatedSession,
 } from "../auth/session-store";
@@ -52,7 +60,7 @@ async function recordAttempt(email: string, meta: RequestMeta, success: boolean,
 // Step 1: password
 
 export type LoginResult =
-  | { ok: true; token: string; next: "verify" | "setup" }
+  | { ok: true; token: string; next: "verify" | "done" }
   | { ok: false; error: "invalid_credentials" | "too_many_attempts"; retryAfterSeconds?: number };
 
 export async function loginWithPassword(
@@ -106,6 +114,13 @@ export async function loginWithPassword(
       .set(lockout ? { failedLoginCount: 0, lockedUntil: lockout.lockedUntil, lockoutLevel: lockout.lockoutLevel } : { failedLoginCount: failed })
       .where(eq(users.id, user.id));
     await recordAttempt(email, meta, false, lockout ? "locked_now" : "wrong_password");
+    const { recordAppSignal } = await import("@/monitoring/record");
+    await recordAppSignal(
+      { ip: meta.ip, method: "POST", path: "/auth/login", query: "", userAgent: meta.userAgent },
+      lockout
+        ? { ruleId: "auth.lockout", category: "brute_force", severity: "high", score: 30, excerpt: email }
+        : { ruleId: "auth.failed-login", category: "brute_force", severity: "low", score: 5, excerpt: email },
+    );
     if (lockout) {
       await enqueueJob("mail.security_alert", {
         kind: "account_locked",
@@ -131,15 +146,33 @@ export async function loginWithPassword(
   await db.update(users).set(updates).where(eq(users.id, user.id));
   await recordAttempt(email, meta, true, "password_ok");
 
-  const setup = !user.totpEnabledAt;
+  // Two factor authentication is optional: without it the session is complete.
+  if (!user.totpEnabledAt) {
+    const token = await completeLogin(user, meta, "auth.login");
+    return { ok: true, token, next: "done" };
+  }
   const { token } = await createSession({
     userId: user.id,
     kind: "admin",
     twoFactorVerified: false,
-    policy: setup ? SESSION_POLICIES.pending_setup : SESSION_POLICIES.pending_2fa,
+    policy: SESSION_POLICIES.pending_2fa,
     ...meta,
   });
-  return { ok: true, token, next: setup ? "setup" : "verify" };
+  return { ok: true, token, next: "verify" };
+}
+
+/** Opens the full admin session and records the login. */
+async function completeLogin(user: User, meta: RequestMeta, action: string, pendingSessionId?: string): Promise<string> {
+  if (pendingSessionId) await revokeSessionById(pendingSessionId);
+  const { token } = await createSession({ userId: user.id, kind: "admin", twoFactorVerified: true, ...meta });
+  await getDb()
+    .update(users)
+    .set({ lastLoginAt: new Date(), lastLoginIp: meta.ip, lockoutLevel: 0 })
+    .where(eq(users.id, user.id));
+  await resetRateLimit(`login:email:${sha256(user.email)}`);
+  await noteLoginIp(user, meta);
+  await writeAudit({ actorId: user.id, action, entityType: "user", entityId: user.id, ...meta });
+  return token;
 }
 
 // Step 2: second factor
@@ -154,27 +187,8 @@ export type SecondFactorResult =
   | { ok: true; token: string; usedBackupCode: boolean; remainingBackupCodes: number }
   | { ok: false; error: "invalid_code" | "too_many_attempts" | "expired" };
 
-async function upgradeSession(
-  pending: ValidatedSession,
-  meta: RequestMeta,
-  action: string,
-): Promise<string> {
-  const db = getDb();
-  await revokeSessionById(pending.session.id);
-  const { token } = await createSession({
-    userId: pending.user.id,
-    kind: "admin",
-    twoFactorVerified: true,
-    ...meta,
-  });
-  await db
-    .update(users)
-    .set({ lastLoginAt: new Date(), lastLoginIp: meta.ip, lockoutLevel: 0 })
-    .where(eq(users.id, pending.user.id));
-  await resetRateLimit(`login:email:${sha256(pending.user.email)}`);
-  await noteLoginIp(pending.user, meta);
-  await writeAudit({ actorId: pending.user.id, action, entityType: "user", entityId: pending.user.id, ...meta });
-  return token;
+async function upgradeSession(pending: ValidatedSession, meta: RequestMeta, action: string): Promise<string> {
+  return completeLogin(pending.user, meta, action, pending.session.id);
 }
 
 /** Records the IP and sends a notification when it was never seen before. */
@@ -268,69 +282,123 @@ export async function verifySecondFactor(
   return { ok: true, token, usedBackupCode: false, remainingBackupCodes: -1 };
 }
 
-// First time TOTP setup
+// Account security, for a logged in administrator
 
-export async function startTotpSetup(pendingToken: string) {
-  const pending = await getPendingSession(pendingToken);
-  if (!pending || pending.user.totpEnabledAt) return null;
+async function loadUser(userId: string): Promise<User> {
+  const [user] = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) throw new Error("Utilisateur introuvable.");
+  return user;
+}
+
+/** Starts (or resumes) TOTP enrollment: the secret is stored encrypted, not yet enabled. */
+export async function beginTotpEnrollment(userId: string) {
+  const user = await loadUser(userId);
+  if (user.totpEnabledAt) return null;
   let secret: string;
-  if (pending.user.totpSecretEnc) {
-    secret = decryptSecret(pending.user.totpSecretEnc, encryptionKey());
+  if (user.totpSecretEnc) {
+    secret = decryptSecret(user.totpSecretEnc, encryptionKey());
   } else {
     secret = generateTotpSecret();
-    await getDb()
-      .update(users)
-      .set({ totpSecretEnc: encryptSecret(secret, encryptionKey()) })
-      .where(eq(users.id, pending.user.id));
+    await getDb().update(users).set({ totpSecretEnc: encryptSecret(secret, encryptionKey()) }).where(eq(users.id, userId));
   }
-  return {
-    email: pending.user.email,
-    secret,
-    uri: totpUri(secret, pending.user.email),
-    qrDataUrl: await totpQrDataUrl(secret, pending.user.email),
-  };
+  return { secret, uri: totpUri(secret, user.email), qrDataUrl: await totpQrDataUrl(secret, user.email) };
 }
 
-export type ConfirmSetupResult =
-  | { ok: true; token: string; backupCodes: string[] }
-  | { ok: false; error: "invalid_code" | "too_many_attempts" | "expired" };
+export type SecurityResult = { ok: true; backupCodes?: string[] } | { ok: false; error: string };
 
-export async function confirmTotpSetup(
-  pendingToken: string,
-  code: string,
-  meta: RequestMeta,
-): Promise<ConfirmSetupResult> {
-  const pending = await getPendingSession(pendingToken);
-  if (!pending || pending.user.totpEnabledAt || !pending.user.totpSecretEnc) {
-    return { ok: false, error: "expired" };
-  }
-  const limit = await consumeRateLimit(`totp:session:${pending.session.id}`, RATE_LIMITS.totp);
-  if (!limit.allowed) {
-    await revokeSessionById(pending.session.id);
-    return { ok: false, error: "too_many_attempts" };
-  }
-  const secret = decryptSecret(pending.user.totpSecretEnc, encryptionKey());
-  const step = verifyTotpCode(secret, code, pending.user.totpLastUsedStep);
-  if (step === null) {
-    await recordAttempt(pending.user.email, meta, false, "totp_setup_invalid");
-    return { ok: false, error: "invalid_code" };
-  }
-
+async function storeBackupCodes(userId: string): Promise<string[]> {
   const codes = generateBackupCodes();
   await getDb().transaction(async (tx) => {
-    await tx
-      .update(users)
-      .set({ totpEnabledAt: new Date(), totpLastUsedStep: step })
-      .where(eq(users.id, pending.user.id));
-    await tx.delete(backupCodes).where(eq(backupCodes.userId, pending.user.id));
-    await tx
-      .insert(backupCodes)
-      .values(codes.map((c) => ({ userId: pending.user.id, codeHash: hashBackupCode(c) })));
+    await tx.delete(backupCodes).where(eq(backupCodes.userId, userId));
+    await tx.insert(backupCodes).values(codes.map((code) => ({ userId, codeHash: hashBackupCode(code) })));
   });
-  await recordAttempt(pending.user.email, meta, true, "totp_setup_ok");
-  const token = await upgradeSession(pending, meta, "auth.totp_enabled");
-  return { ok: true, token, backupCodes: codes };
+  return codes;
 }
+
+export async function confirmTotpEnrollment(userId: string, code: string, meta: RequestMeta): Promise<SecurityResult> {
+  const user = await loadUser(userId);
+  if (user.totpEnabledAt) return { ok: false, error: "La double authentification est déjà active." };
+  if (!user.totpSecretEnc) return { ok: false, error: "Relancez la configuration." };
+  const limit = await consumeRateLimit(`totp:enroll:${userId}`, RATE_LIMITS.totp);
+  if (!limit.allowed) return { ok: false, error: "Trop d'essais. Réessayez dans quelques minutes." };
+  const step = verifyTotpCode(decryptSecret(user.totpSecretEnc, encryptionKey()), code, user.totpLastUsedStep);
+  if (step === null) return { ok: false, error: "Code invalide. Vérifiez l'heure de votre téléphone." };
+  await getDb().update(users).set({ totpEnabledAt: new Date(), totpLastUsedStep: step }).where(eq(users.id, userId));
+  const codes = await storeBackupCodes(userId);
+  await writeAudit({ actorId: userId, action: "auth.totp_enabled", entityType: "user", entityId: userId, ...meta });
+  return { ok: true, backupCodes: codes };
+}
+
+/** Checks the current password, plus a TOTP or backup code when 2FA is on. */
+async function verifyIdentity(user: User, password: string, code: string): Promise<string | null> {
+  const limit = await consumeRateLimit(`reauth:${user.id}`, RATE_LIMITS.login);
+  if (!limit.allowed) return "Trop d'essais. Réessayez plus tard.";
+  if (!user.passwordHash || !(await verifyPassword(user.passwordHash, password))) return "Mot de passe incorrect.";
+  if (user.totpEnabledAt && user.totpSecretEnc) {
+    if (looksLikeBackupCode(code)) {
+      const [used] = await getDb()
+        .update(backupCodes)
+        .set({ usedAt: new Date() })
+        .where(and(eq(backupCodes.userId, user.id), eq(backupCodes.codeHash, hashBackupCode(code)), isNull(backupCodes.usedAt)))
+        .returning({ id: backupCodes.id });
+      if (!used) return "Code invalide.";
+    } else {
+      const step = verifyTotpCode(decryptSecret(user.totpSecretEnc, encryptionKey()), code, user.totpLastUsedStep);
+      if (step === null) return "Code invalide.";
+      await getDb().update(users).set({ totpLastUsedStep: step }).where(eq(users.id, user.id));
+    }
+  }
+  return null;
+}
+
+export async function disableTotp(userId: string, password: string, code: string, meta: RequestMeta): Promise<SecurityResult> {
+  const user = await loadUser(userId);
+  if (!user.totpEnabledAt) return { ok: false, error: "La double authentification n'est pas active." };
+  const error = await verifyIdentity(user, password, code);
+  if (error) return { ok: false, error };
+  await getDb().update(users).set({ totpEnabledAt: null, totpSecretEnc: null, totpLastUsedStep: null }).where(eq(users.id, userId));
+  await getDb().delete(backupCodes).where(eq(backupCodes.userId, userId));
+  await writeAudit({ actorId: userId, action: "auth.totp_disabled", entityType: "user", entityId: userId, ...meta });
+  return { ok: true };
+}
+
+export async function regenerateBackupCodes(userId: string, password: string, code: string, meta: RequestMeta): Promise<SecurityResult> {
+  const user = await loadUser(userId);
+  if (!user.totpEnabledAt) return { ok: false, error: "Activez d'abord la double authentification." };
+  const error = await verifyIdentity(user, password, code);
+  if (error) return { ok: false, error };
+  const codes = await storeBackupCodes(userId);
+  await writeAudit({ actorId: userId, action: "auth.backup_codes_regenerated", entityType: "user", entityId: userId, ...meta });
+  return { ok: true, backupCodes: codes };
+}
+
+/** Changes the password and closes every other session. */
+export async function changePassword(
+  userId: string,
+  currentSessionId: string,
+  input: { current: string; next: string; confirmation: string; code: string },
+  meta: RequestMeta,
+): Promise<SecurityResult> {
+  const user = await loadUser(userId);
+  if (input.next !== input.confirmation) return { ok: false, error: "Les nouveaux mots de passe ne correspondent pas." };
+  const issues = checkPasswordPolicy(input.next, { email: user.email, name: user.name });
+  if (issues.length > 0) return { ok: false, error: issues.map((issue) => PASSWORD_ISSUE_MESSAGES[issue]).join(" ") };
+  const error = await verifyIdentity(user, input.current, input.code);
+  if (error) return { ok: false, error };
+  await getDb()
+    .update(users)
+    .set({ passwordHash: await hashPassword(input.next), passwordChangedAt: new Date() })
+    .where(eq(users.id, userId));
+  await revokeUserSessions(userId, currentSessionId);
+  await writeAudit({ actorId: userId, action: "auth.password_changed", entityType: "user", entityId: userId, ...meta });
+  return { ok: true };
+}
+
+export async function revokeOtherSessions(userId: string, currentSessionId: string, meta: RequestMeta): Promise<void> {
+  await revokeUserSessions(userId, currentSessionId);
+  await writeAudit({ actorId: userId, action: "auth.sessions_revoked", entityType: "user", entityId: userId, ...meta });
+}
+
 
 export async function logout(sessionId: string, userId: string, meta: RequestMeta): Promise<void> {
   await revokeSessionById(sessionId);

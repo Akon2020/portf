@@ -149,6 +149,28 @@ export const testimonialSchema = z.object({
   sortOrder: order,
 });
 
+export const faqSchema = z.object({
+  category: localized({ required: true, max: 80 }),
+  question: localized({ required: true, max: 300 }),
+  answer: localized({ required: true, max: 3000 }),
+  showOnHome: z.boolean().default(false),
+  isVisible: z.boolean().default(true),
+  sortOrder: order,
+});
+
+export const partnerSchema = z.object({
+  name: z.string().trim().min(1, "Obligatoire").max(120),
+  url,
+  logoMediaId: z
+    .string()
+    .trim()
+    .default("")
+    .transform((value) => value || null)
+    .pipe(z.uuid().nullable()),
+  isVisible: z.boolean().default(true),
+  sortOrder: order,
+});
+
 export const statSchema = z.object({
   label: localized({ required: true, max: 120 }),
   value: z.string().trim().min(1, "Obligatoire").max(20),
@@ -193,4 +215,6 @@ export type SkillInput = z.infer<typeof skillSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type TestimonialInput = z.infer<typeof testimonialSchema>;
 export type StatInput = z.infer<typeof statSchema>;
+export type FaqInput = z.infer<typeof faqSchema>;
+export type PartnerInput = z.infer<typeof partnerSchema>;
 export type SocialLinkInput = z.infer<typeof socialLinkSchema>;

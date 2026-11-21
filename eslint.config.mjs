@@ -13,7 +13,7 @@ const config = [
     },
   },
   {
-    ignores: [".next/**", "node_modules/**", "dist/**", "release/**", "drizzle/**", "portfolio_data/**", "next-env.d.ts"],
+    ignores: [".next/**", "node_modules/**", "dist/**", "release/**", "drizzle/**", "portfolio_data/**", ".tmp-e2e/**", "test-results/**", "playwright-report/**", "next-env.d.ts"],
   },
 ];
 
