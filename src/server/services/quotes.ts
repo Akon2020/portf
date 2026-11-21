@@ -240,7 +240,7 @@ async function lockAsSent(id: string): Promise<Quote> {
   return getDb().transaction(async (tx) => {
     const [quote] = await tx.select().from(quotes).where(eq(quotes.id, id)).for("update");
     if (!quote || quote.deletedAt) throw new QuoteError("Devis introuvable.");
-    if (["accepted", "declined", "expired"].includes(quote.status)) throw new QuoteError("Ce devis est clôturé.");
+    if (["accepted", "declined", "expired", "revised"].includes(quote.status)) throw new QuoteError("Ce devis est clôturé.");
     const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(quoteItems).where(eq(quoteItems.quoteId, id));
     if (count === 0) throw new QuoteError("Ajoutez au moins une ligne avant l'envoi.");
     if (quote.number) return quote;
@@ -251,6 +251,10 @@ async function lockAsSent(id: string): Promise<Quote> {
       .where(eq(quotes.id, id))
       .returning();
     if (updated.quoteRequestId) await tx.update(quoteRequests).set({ status: "quoted" }).where(eq(quoteRequests.id, updated.quoteRequestId));
+    // A sent revision replaces the previous version for the client.
+    if (updated.parentQuoteId) {
+      await tx.update(quotes).set({ status: "revised" }).where(and(eq(quotes.id, updated.parentQuoteId), inArray(quotes.status, ["sent", "viewed", "negotiating"])));
+    }
     return updated;
   });
 }
@@ -334,6 +338,13 @@ export function isExpired(quote: Pick<Quote, "validUntil">): boolean {
 }
 
 async function notifyOwner(title: string, quote: Quote, extra: [string, string][]) {
+  const { notifyAdmins } = await import("./notifications");
+  await notifyAdmins({
+    type: quote.status === "accepted" ? "quote_accepted" : "quote_declined",
+    title: `${title} : ${quote.number ?? ""}`,
+    body: `${quote.recipientName}, ${formatMoney(quote.total, quote.currency)}`,
+    url: `/admin/devis/emis/${quote.id}`,
+  });
   const issuer = await readSettingUncached("issuer");
   const to = process.env.ADMIN_EMAIL || issuer.email;
   if (!to) return;
@@ -357,12 +368,12 @@ export async function acceptQuote(token: string, signerName: string, meta: Reque
   const found = await getQuoteByToken(token);
   if (!found) return { ok: false, error: "invalid" };
   const { quote } = found;
-  if (!["sent", "viewed"].includes(quote.status)) return { ok: false, error: "closed" };
+  if (!["sent", "viewed", "negotiating"].includes(quote.status)) return { ok: false, error: "closed" };
   if (isExpired(quote)) return { ok: false, error: "expired" };
   const [updated] = await getDb()
     .update(quotes)
     .set({ status: "accepted", acceptedAt: new Date(), acceptedBy: name, acceptedIp: meta.ip })
-    .where(and(eq(quotes.id, quote.id), inArray(quotes.status, ["sent", "viewed"])))
+    .where(and(eq(quotes.id, quote.id), inArray(quotes.status, ["sent", "viewed", "negotiating"])))
     .returning();
   if (!updated) return { ok: false, error: "closed" };
   if (updated.quoteRequestId) await getDb().update(quoteRequests).set({ status: "won" }).where(eq(quoteRequests.id, updated.quoteRequestId));
@@ -377,7 +388,7 @@ export async function declineQuote(token: string, meta: RequestMeta): Promise<De
   const [updated] = await getDb()
     .update(quotes)
     .set({ status: "declined", declinedAt: new Date() })
-    .where(and(eq(quotes.id, found.quote.id), inArray(quotes.status, ["sent", "viewed"])))
+    .where(and(eq(quotes.id, found.quote.id), inArray(quotes.status, ["sent", "viewed", "negotiating"])))
     .returning();
   if (!updated) return { ok: false, error: "closed" };
   if (updated.quoteRequestId) await getDb().update(quoteRequests).set({ status: "lost" }).where(eq(quoteRequests.id, updated.quoteRequestId));

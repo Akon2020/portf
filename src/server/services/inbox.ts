@@ -9,6 +9,7 @@ import { clients, contacts, conversations, messages, type Attachment, type Conve
 import { readSettingUncached } from "../content/settings-store";
 import { newMessageId, renderMail, sendMailOrQueue } from "../mail/send";
 import { writeAudit } from "./audit";
+import { notifyAdmins } from "./notifications";
 
 export type Locale = "fr" | "en";
 
@@ -133,6 +134,12 @@ export async function receiveInbound(input: InboundInput, meta: RequestMeta): Pr
   );
   await sendMailOrQueue({ to: await adminRecipient(), subject: `[Site] ${subject}`, replyTo: contact.email, ...notification });
 
+  await notifyAdmins({
+    type: input.source === "quote_form" ? "quote_request" : "message",
+    title: input.source === "quote_form" ? `Demande de devis : ${input.name}` : `Nouveau message : ${input.name}`,
+    body: input.message.slice(0, 200),
+    url: `/admin/messagerie/${conversation.id}`,
+  });
   return { conversation };
 }
 

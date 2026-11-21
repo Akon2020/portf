@@ -14,6 +14,7 @@ import { renderMail, sendMailOrQueue } from "../mail/send";
 import { writeAudit } from "./audit";
 import { projectProgress } from "./clients";
 import { upsertContact, type RequestMeta } from "./inbox";
+import { notifyAdmins } from "./notifications";
 
 /** Generic answer, identical whether the account exists or not. */
 export const MAGIC_LINK_SENT = "Si un espace client existe pour cette adresse, un lien de connexion valable 15 minutes vient d'être envoyé.";
@@ -161,5 +162,6 @@ export async function sendPortalMessage(clientId: string, projectId: string | nu
     }),
   );
   await sendMailOrQueue({ to, subject: `[Espace client] ${subject}`, replyTo: client.email, ...mail });
+  await notifyAdmins({ type: "portal_message", title: `Message de ${client.name}`, body: text.slice(0, 200), url: `/admin/messagerie/${conversation.id}` });
   return { ok: true };
 }

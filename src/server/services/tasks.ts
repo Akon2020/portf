@@ -15,6 +15,7 @@ import { renderMail, sendMailOrQueue } from "../mail/send";
 import { writeAudit } from "./audit";
 import type { RequestMeta } from "./inbox";
 import { pushToAdmins } from "./push";
+import { notifyAdmins } from "./notifications";
 
 export class TaskError extends Error {}
 
@@ -179,6 +180,7 @@ export async function deliverReminder(reminderId: string): Promise<void> {
   if (row.reminder.channels.includes("push")) {
     await pushToAdmins({ title: `Rappel : ${row.task.title}`, body: when ? `Prévu ${when}` : "Tâche à traiter", url, tag: `task-${row.task.id}` });
   }
+  await notifyAdmins({ type: "task_reminder", title: `Rappel : ${row.task.title}`, body: when ? `Prévu ${when}` : null, url: `/admin/taches/${row.task.id}` });
   await db.update(reminders).set({ status: "sent", sentAt: new Date() }).where(eq(reminders.id, reminderId));
 }
 

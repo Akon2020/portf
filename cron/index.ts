@@ -17,6 +17,7 @@ import { markOverdueInvoices } from "../src/server/services/invoices";
 import { generateVapidKeys } from "../src/server/services/push";
 import { expireQuotes } from "../src/server/services/quotes";
 import { sendDailyDigest } from "../src/server/services/tasks";
+import { purgeNotifications } from "../src/server/services/notifications";
 
 loadEnvConfig(process.cwd());
 registerJobHandlers();
@@ -54,7 +55,7 @@ const tasks: Record<string, { task: Task; tracked: boolean }> = {
       const expiredQuotes = await expireQuotes();
       const overdueInvoices = await markOverdueInvoices();
       const aggregated = await aggregateDay(args[0] && /^d{4}-d{2}-d{2}$/.test(args[0]) ? args[0] : yesterdayLocal());
-      const purged = await purgeMonitoring();
+      const purged = (await purgeMonitoring()) + (await purgeNotifications());
       return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes + overdueInvoices + aggregated + purged };
     },
   },

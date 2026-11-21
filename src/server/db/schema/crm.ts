@@ -23,7 +23,8 @@ export const deliveryStatus = pgEnum("delivery_status", ["received", "queued", "
 export const quoteRequestStatus = pgEnum("quote_request_status", ["new", "reviewing", "quoted", "won", "lost"]);
 export const preferredContact = pgEnum("preferred_contact", ["email", "whatsapp", "call"]);
 export const clientType = pgEnum("client_type", ["person", "company"]);
-export const quoteStatus = pgEnum("quote_status", ["draft", "sent", "viewed", "accepted", "declined", "expired"]);
+export const quoteStatus = pgEnum("quote_status", ["draft", "sent", "viewed", "accepted", "declined", "expired", "negotiating", "revised"]);
+export const negotiationAuthor = pgEnum("negotiation_author", ["client", "admin"]);
 export const documentType = pgEnum("document_type", ["quote", "invoice", "receipt"]);
 export const sendChannel = pgEnum("send_channel", ["email", "whatsapp_link"]);
 
@@ -157,6 +158,9 @@ export const quotes = pgTable(
     quoteRequestId: uuid("quote_request_id").references(() => quoteRequests.id, { onDelete: "set null" }),
     // Client project link added with the CRM module.
     clientProjectId: uuid("client_project_id"),
+    /** Previous version of a quote revised after a negotiation. */
+    parentQuoteId: uuid("parent_quote_id"),
+    revision: integer("revision").notNull().default(1),
     recipientName: text("recipient_name").notNull(),
     recipientEmail: text("recipient_email"),
     recipientPhone: text("recipient_phone"),
@@ -210,6 +214,26 @@ export const quoteItems = pgTable(
   (table) => [index("quote_items_quote_idx").on(table.quoteId, table.sortOrder)],
 );
 
+/** Negotiation thread of a quote: client proposals and admin answers. */
+export const quoteNegotiations = pgTable(
+  "quote_negotiations",
+  {
+    id: id(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    author: negotiationAuthor("author").notNull(),
+    authorName: text("author_name"),
+    /** Budget proposed by the client, in cents of the quote currency. */
+    proposedTotal: integer("proposed_total"),
+    requestedFeatures: text("requested_features"),
+    message: text("message").notNull(),
+    ip: text("ip"),
+    createdAt: createdAt(),
+  },
+  (table) => [index("quote_negotiations_quote_idx").on(table.quoteId, table.createdAt)],
+);
+
 /** Gapless numbering per document type and year, incremented inside a transaction. */
 export const sequences = pgTable(
   "sequences",
@@ -245,3 +269,4 @@ export type QuoteRequest = typeof quoteRequests.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteItem = typeof quoteItems.$inferSelect;
+export type QuoteNegotiation = typeof quoteNegotiations.$inferSelect;

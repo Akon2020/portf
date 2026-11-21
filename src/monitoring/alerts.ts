@@ -7,6 +7,7 @@ import { getDb } from "@/server/db";
 import { ipBans, securityEvents } from "@/server/db/schema";
 import { renderMail, sendMailOrQueue } from "@/server/mail/send";
 import { pushToAdmins } from "@/server/services/push";
+import { notifyAdmins } from "@/server/services/notifications";
 
 /** Grouped alert: critical events and automatic bans since the previous alert. */
 export async function sendSecurityDigest(since: Date): Promise<number> {
@@ -39,5 +40,6 @@ export async function sendSecurityDigest(since: Date): Promise<number> {
     await sendMailOrQueue({ to, subject: `[Sécurité] ${title}`, ...mail });
   }
   await pushToAdmins({ title: "Alerte de sécurité", body: title, url, tag: "security" });
+  await notifyAdmins({ type: "security", title: `Sécurité : ${title}`, body: lines[0] ?? null, url: "/admin/monitoring/securite" });
   return lines.length;
 }

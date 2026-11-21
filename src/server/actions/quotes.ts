@@ -117,3 +117,21 @@ export async function setRequestStatusAction(id: string, status: QuoteRequest["s
   revalidatePath("/admin/devis");
   revalidatePath(`/admin/devis/${id}`);
 }
+
+export async function replyNegotiationAction(id: string, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
+  const user = await actor();
+  const { replyToNegotiation } = await import("../services/negotiation");
+  try {
+    await replyToNegotiation(id, String(formData.get("message") ?? ""), user);
+  } catch (error) {
+    return failure(error);
+  }
+  revalidatePath(`/admin/devis/emis/${id}`);
+  return { ok: true, message: "Réponse envoyée au client, le devis est de nouveau ouvert." };
+}
+
+export async function reviseQuoteAction(id: string): Promise<void> {
+  const { reviseQuote } = await import("../services/negotiation");
+  const revision = await reviseQuote(id, await actor());
+  redirect(`/admin/devis/emis/${revision}`);
+}

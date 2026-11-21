@@ -201,6 +201,46 @@ describe.skipIf(!hasTestDatabase)("quotes", () => {
     expect(summary.remaining).toBe(0);
   });
 
+  it("negotiates until a revised quote is accepted", async () => {
+    const user = await actor();
+    const id = await createQuoteDraft({}, user);
+    await saveQuoteDraft(id, input(), user);
+    await sendQuoteByEmail(id, {}, user);
+    const { quote } = (await getQuote(id))!;
+    const neg = await import("@/server/services/negotiation");
+    const { notifications } = await import("@/server/db/schema");
+
+    const proposal = neg.negotiationInputSchema.parse({ proposedTotal: "2 000", requestedFeatures: "Paiement Mobile Money", message: "Notre budget est plus serré, est-ce possible ?" });
+    expect(await neg.proposeNegotiation(quote.publicToken, proposal, meta)).toEqual({ ok: true });
+    let current = (await getQuote(id))!.quote;
+    expect(current.status).toBe("negotiating");
+    expect((await getDb().select().from(notifications)).some((row) => row.type === "quote_negotiation")).toBe(true);
+    expect(() => neg.negotiationInputSchema.parse({ message: "court" })).toThrow();
+
+    await clearOutbox();
+    await neg.replyToNegotiation(id, "Je peux retirer la formation pour réduire le coût.", user);
+    current = (await getQuote(id))!.quote;
+    expect(current.status).toBe("sent");
+    expect((await readOutbox())[0]).toContain("retirer la formation");
+
+    await neg.proposeNegotiation(quote.publicToken, neg.negotiationInputSchema.parse({ message: "D'accord, pouvez-vous envoyer une nouvelle version ?" }), meta);
+    const revisionId = await neg.reviseQuote(id, user);
+    expect(await neg.reviseQuote(id, user)).toBe(revisionId);
+    const revision = (await getQuote(revisionId))!.quote;
+    expect(revision.parentQuoteId).toBe(id);
+    expect(revision.revision).toBe(2);
+    await saveQuoteDraft(revisionId, input({ items: [{ description: "Application sans formation", quantity: "1", unitPrice: "2 000" }], discount: "", taxRate: "" }), user);
+    await sendQuoteByEmail(revisionId, {}, user);
+
+    expect((await getQuote(id))!.quote.status).toBe("revised");
+    expect((await neg.latestRevision(id))?.id).toBe(revisionId);
+    expect(await acceptQuote(quote.publicToken, "Amani Bahati", meta)).toEqual({ ok: false, error: "closed" });
+    const sent = (await getQuote(revisionId))!.quote;
+    const thread = await neg.negotiationThread(sent);
+    expect(thread.map((entry) => entry.author)).toEqual(["client", "admin", "client"]);
+    expect(await acceptQuote(sent.publicToken, "Amani Bahati", meta)).toEqual({ ok: true });
+  });
+
   it("expires quotes past their validity", async () => {
     const user = await actor();
     const id = await createQuoteDraft({}, user);

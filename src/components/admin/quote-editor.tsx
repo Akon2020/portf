@@ -317,3 +317,35 @@ export function QuoteSendPanel({
     </section>
   );
 }
+
+/** Answer to a client proposal that keeps the quote as it is (the quote reopens for the client). */
+export function NegotiationReply({ action }: { action: Action }) {
+  const [state, formAction, pending] = useActionState(action, {});
+  const [message, setMessage] = useState("");
+  return (
+    <form
+      onSubmit={submitWithoutReset((formData) => {
+        formAction(formData);
+        setMessage("");
+      })}
+      className="space-y-3"
+    >
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">Répondre sans modifier le devis</span>
+        <textarea
+          name="message"
+          rows={4}
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="Expliquez ce qui est possible, ce qui ne l'est pas, ou proposez un compromis."
+          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+        />
+      </label>
+      <Button type="submit" variant="outline" disabled={pending || message.trim().length < 5} className="h-10 w-full">
+        {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
+        Envoyer la réponse
+      </Button>
+      <StatusMessage state={state} />
+    </form>
+  );
+}

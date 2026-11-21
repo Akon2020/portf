@@ -1,10 +1,12 @@
 import { AlertTriangle, CheckCircle2, FileDown, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { QuoteDecision } from "@/components/public/quote-decision";
+import { QuoteNegotiation } from "@/components/public/quote-negotiation";
+import { latestRevision, negotiationThread } from "@/server/services/negotiation";
 import { formatMoney } from "@/lib/money";
 import { RATE_LIMITS, consumeRateLimit } from "@/server/auth/rate-limit";
 import { readSettingUncached } from "@/server/content/queries";
-import { acceptQuoteAction, declineQuoteAction } from "@/server/actions/documents";
+import { acceptQuoteAction, declineQuoteAction, negotiateQuoteAction } from "@/server/actions/documents";
 import { recordAppSignal } from "@/monitoring/record";
 import { getRequestContext } from "@/server/request-context";
 import { DocumentHeader, InvoiceView, ReceiptView, type EngagementView } from "@/components/public/document-views";
@@ -52,6 +54,14 @@ const T = {
     declined: "Ce devis a été refusé.",
     expired: "Ce devis a expiré. Contactez Isaac Akonkwa pour une version à jour.",
     notFound: "Ce document est introuvable ou le lien n'est plus valide.",
+    negotiating: "Votre proposition a été transmise. Vous pouvez tout de même accepter ou refuser ce devis en l'état.",
+    revised: "Ce devis a été remplacé par une nouvelle version.",
+    seeRevision: "Voir la nouvelle version",
+    thread: "Échanges sur ce devis",
+    you: "Vous",
+    proposed: "Budget proposé",
+    features: "Fonctionnalités demandées",
+    version: "version",
   },
   en: {
     quote: "Quote",
@@ -76,6 +86,14 @@ const T = {
     declined: "This quote was declined.",
     expired: "This quote has expired. Contact Isaac Akonkwa for an updated version.",
     notFound: "This document cannot be found or the link is no longer valid.",
+    negotiating: "Your proposal has been sent. You can still accept or decline this quote as it is.",
+    revised: "This quote has been replaced by a new version.",
+    seeRevision: "See the new version",
+    thread: "Discussion about this quote",
+    you: "You",
+    proposed: "Proposed budget",
+    features: "Requested features",
+    version: "version",
   },
 };
 
@@ -131,7 +149,9 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       typeof value === "string" ? new Date(`${value}T12:00:00Z`) : value,
     );
   const expired = isExpired(quote) || quote.status === "expired";
-  const open = ["sent", "viewed"].includes(quote.status) && !expired;
+  const open = ["sent", "viewed", "negotiating"].includes(quote.status) && !expired;
+  const [thread, revision] = await Promise.all([negotiationThread(quote), quote.status === "revised" ? latestRevision(quote.id) : Promise.resolve(null)]);
+  const stamp = new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lubumbashi" });
   const rate = quote.exchangeRate ? Number(quote.exchangeRate) : 0;
   const approx = rate
     ? quote.currency === "USD"
@@ -155,7 +175,22 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           {t.declined}
         </p>
       )}
-      {expired && quote.status !== "accepted" && quote.status !== "declined" && (
+      {quote.status === "revised" && (
+        <div role="status" className="mt-8 flex flex-col gap-3 rounded-xl border border-info/40 bg-info/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span>{t.revised}</span>
+          {revision && (
+            <a href={`/f/${revision.publicToken}`} className="inline-flex h-10 items-center justify-center rounded-full bg-accent px-4 font-semibold text-accent-foreground">
+              {t.seeRevision}
+            </a>
+          )}
+        </div>
+      )}
+      {quote.status === "negotiating" && !expired && (
+        <p role="status" className="mt-8 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm">
+          {t.negotiating}
+        </p>
+      )}
+      {expired && quote.status !== "accepted" && quote.status !== "declined" && quote.status !== "revised" && (
         <p role="status" className="mt-8 flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm">
           <AlertTriangle className="size-5 text-warning" aria-hidden="true" />
           {t.expired}
@@ -256,9 +291,43 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
         </a>
       </div>
 
+      {thread.length > 0 && (
+        <section className="mt-10" aria-labelledby="thread-title">
+          <h2 id="thread-title" className="label-mono text-muted-foreground">
+            {t.thread}
+          </h2>
+          <ol className="mt-4 space-y-3">
+            {thread.map((entry) => (
+              <li key={entry.id} className={`rounded-2xl border p-4 text-sm ${entry.author === "client" ? "bg-surface/60 sm:mr-12" : "bg-card sm:ml-12"}`}>
+                <p className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{entry.author === "client" ? t.you : (entry.authorName ?? issuer.name)}</span>
+                  <span>
+                    {entry.quoteNumber ? `${entry.quoteNumber} (${t.version} ${entry.revision}) · ` : ""}
+                    {stamp.format(entry.createdAt)}
+                  </span>
+                </p>
+                {entry.proposedTotal ? (
+                  <p className="mt-2">
+                    {t.proposed} : <span className="font-semibold">{money(entry.proposedTotal)}</span>
+                  </p>
+                ) : null}
+                {entry.requestedFeatures && (
+                  <p className="mt-2 whitespace-pre-line">
+                    <span className="block text-muted-foreground">{t.features} :</span>
+                    {entry.requestedFeatures}
+                  </p>
+                )}
+                <p className="mt-2 whitespace-pre-line">{entry.message}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {open && (
-        <div className="mt-10">
+        <div className="mt-10 space-y-6">
           <QuoteDecision locale={locale} acceptAction={acceptQuoteAction.bind(null, token)} declineAction={declineQuoteAction.bind(null, token)} />
+          <QuoteNegotiation locale={locale} currency={quote.currency} defaultName={quote.recipientName} action={negotiateQuoteAction.bind(null, token)} />
         </div>
       )}
     </main>
