@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
       "./tsconfig*.json",
       "./components.json",
       "./pnpm-*.yaml",
+      // Archives and test output left in the project folder must never be shipped.
+      "./*.{zip,7z,rar,tar,tgz,gz}",
+      "./test-results/**",
+      "./playwright-report/**",
     ],
   },
   images: {

@@ -290,6 +290,35 @@ Rôle de chaque tâche : ops.md section 6. Après 10 minutes, Administration, Mo
 - [ ] Une sauvegarde apparaît dans `~/portfolio_data/backups` le lendemain matin.
 - [ ] Google Search Console : ajouter le domaine et soumettre le sitemap.
 
+## Déploiement manuel (sans le workflow « Deploy »)
+
+À utiliser si le déploiement automatique par SSH n'est pas possible. Trois règles :
+
+- **Ne jamais envoyer le dossier `.next`** : il contient le cache de compilation et le serveur de développement (plusieurs Go). Seule la release (environ 130 Mo, 35 Mo compressée) va sur le serveur.
+- **Ne pas compiler sur Windows pour la production** : les modules natifs (Argon2 pour les mots de passe, sharp pour les images) sont installés pour la machine qui compile. Une release construite sur Windows ne démarre pas sur le serveur Linux du cPanel. Le paquet doit être construit par GitHub, sous Linux.
+- **Ne pas laisser d'archives (`.zip`) ni de copies du projet dans le dossier du projet.** Elles sont maintenant exclues de la compilation, et le script de release refuse une release de plus de 400 Mo.
+
+Procédure :
+
+1. GitHub, onglet « Actions », workflow « Release package », « Run workflow » sur `main`.
+2. À la fin (environ 5 minutes), ouvrir l'exécution et télécharger l'artefact `portfolio-release` en bas de la page. C'est un `.zip` qui contient `portfolio-release.tar.gz` : l'extraire sur le poste pour récupérer le `.tar.gz`.
+3. cPanel, « File Manager », dossier `portfolio` : envoyer `portfolio-release.tar.gz` (« Upload »).
+4. Toujours dans le File Manager, clic droit sur l'archive, « Extract », dossier `/home/<utilisateur>/portfolio`. Accepter le remplacement des fichiers existants. Le fichier `.env` n'est pas dans l'archive et n'est donc pas touché.
+5. Supprimer l'archive envoyée.
+6. cPanel, « Terminal » (ou SSH) :
+
+```sh
+cd ~/portfolio
+source ~/nodevenv/portfolio/<version>/bin/activate
+node dist/migrate.js
+node dist/cron.js healthcheck
+mkdir -p tmp && touch tmp/restart.txt
+```
+
+L'extraction ajoute et remplace des fichiers mais n'en supprime pas : les fichiers des anciennes versions s'accumulent dans `.next`. Une fois de temps en temps, avant l'étape 4, supprimer les dossiers `.next` et `node_modules` de `~/portfolio` (jamais `.env` ni `~/portfolio_data`), puis extraire.
+
+Pour inspecter une release en local (sans la déployer) : `pnpm build && pnpm build:cron && node scripts/assemble-release.mjs --archive`.
+
 ## Mettre à jour le site
 
 1. Travailler sur `develop`, pousser, attendre la CI verte.

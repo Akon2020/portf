@@ -1,0 +1,33 @@
+name: Release package
+
+# Manual build of the deployable package on Linux, like the cPanel host.
+# Download portfolio-release.tar.gz from the run summary, then upload it with
+# the cPanel File Manager (see docs/deploiement.md, manual deployment).
+on:
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:chars
+      - run: pnpm build
+      - run: pnpm build:cron
+      - run: node scripts/assemble-release.mjs --archive
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portfolio-release
+          path: portfolio-release.tar.gz
+          # Already compressed: no second compression.
+          compression-level: 0
+          retention-days: 7

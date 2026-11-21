@@ -25,3 +25,9 @@ release-server.log
 
 # End to end test data
 .tmp-e2e/
+
+# Archives (project copies, release packages)
+*.zip
+*.7z
+*.rar
+portfolio-release.tar.gz

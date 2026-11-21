@@ -127,4 +127,41 @@ if (leftovers.length > 0) {
   process.exit(1);
 }
 writeFileSync(`${out}/RELEASE`, `${commit}\n${new Date().toISOString()}\n`);
-console.log(`Release assemblée dans ${out}/ (${commit})`);
+
+// Size guard: the application is under 150 MB. Anything far bigger means a
+// stray file (an archive or a copy of the project) was picked up by tracing.
+function sizeOf(path) {
+  const stats = lstatSync(path);
+  if (!stats.isDirectory()) return stats.size;
+  return readdirSync(path).reduce((total, entry) => total + sizeOf(`${path}/${entry}`), 0);
+}
+const MB = 1024 * 1024;
+const total = sizeOf(out);
+if (total > 400 * MB) {
+  const biggest = readdirSync(out)
+    .map((entry) => ({ entry, size: sizeOf(`${out}/${entry}`) }))
+    .sort((a, b) => b.size - a.size)
+    .slice(0, 5)
+    .map(({ entry, size }) => `  ${entry} : ${Math.round(size / MB)} Mo`)
+    .join("\n");
+  console.error(`Release anormalement lourde (${Math.round(total / MB)} Mo). Plus gros éléments :\n${biggest}`);
+  console.error("Retirer du dossier du projet les archives ou copies du projet, puis relancer pnpm build.");
+  process.exit(1);
+}
+console.log(`Release assemblée dans ${out}/ (${commit}, ${Math.round(total / MB)} Mo)`);
+
+// Native modules (argon2, sharp) are installed for the build machine only.
+if (process.platform !== "linux") {
+  console.warn(
+    `Attention : release construite sur ${process.platform}. Ses modules natifs ne fonctionnent pas sur le serveur Linux du cPanel. ` +
+      "Pour la production, utiliser le workflow GitHub « Release package » ou « Deploy ».",
+  );
+}
+
+// Optional compressed package for an upload through the cPanel File Manager.
+if (process.argv.includes("--archive")) {
+  const archive = "portfolio-release.tar.gz";
+  rmSync(archive, { force: true });
+  execSync(`tar -czf ${archive} -C ${out} .`, { stdio: "inherit" });
+  console.log(`Archive prête : ${archive} (${Math.round(statSync(archive).size / MB)} Mo)`);
+}
