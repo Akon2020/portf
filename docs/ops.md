@@ -2,6 +2,8 @@
 
 Ce document décrit l'installation et l'exploitation du site sur un hébergement cPanel mutualisé avec « Setup Node.js App » (Phusion Passenger). Il couvre aussi les tâches planifiées, les notifications, la sécurité (Cloudflare, bannissements), les sauvegardes, la restauration et la rotation des secrets.
 
+Pour une première mise en ligne, suivre d'abord le guide pas à pas [deploiement.md](deploiement.md).
+
 ## 1. Vérifications préalables sur le cPanel
 
 À faire une seule fois, en SSH :
