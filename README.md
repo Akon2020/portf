@@ -12,7 +12,7 @@ pnpm create-admin
 pnpm dev
 ```
 
-Le détail (base de données, tests d'intégration, déploiement, Cron Jobs) est dans [docs/ops.md](docs/ops.md).
+Mise en ligne pas à pas : [docs/deploiement.md](docs/deploiement.md). Le détail (base de données, tests d'intégration, Cron Jobs, sauvegardes, sécurité) est dans [docs/ops.md](docs/ops.md).
 
 ## Commandes
 
