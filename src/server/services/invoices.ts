@@ -33,6 +33,8 @@ import { nextDocumentNumber } from "./sequences";
 
 export class InvoiceError extends Error {}
 
+const NBSP = String.fromCharCode(0xa0);
+
 export interface Actor extends RequestMeta {
   id: string;
 }
@@ -200,7 +202,7 @@ export async function createInvoiceDraft(source: DraftSource, actor: Actor, tx =
       if (source.depositPercent && source.depositPercent > 0) {
         kind = "deposit";
         const percent = Math.min(100, source.depositPercent);
-        title = locale === "fr" ? `Acompte de ${percent} % : ${quote.title}` : `${percent}% deposit: ${quote.title}`;
+        title = locale === "fr" ? `Acompte de ${percent}${NBSP}%${NBSP}: ${quote.title}` : `${percent}% deposit: ${quote.title}`;
         lines = [
           {
             description: locale === "fr" ? `Acompte de ${percent} % sur le devis ${quote.number ?? ""}`.trim() : `${percent}% deposit on quote ${quote.number ?? ""}`.trim(),
@@ -226,7 +228,7 @@ export async function createInvoiceDraft(source: DraftSource, actor: Actor, tx =
     if (row) {
       kind = "milestone";
       currency = row.project.currency;
-      title = `${row.project.name} : ${row.milestone.title}`;
+      title = `${row.project.name}${NBSP}: ${row.milestone.title}`;
       lines = [{ description: row.milestone.title, quantity: "1", unitPrice: row.milestone.amount ?? 0 }];
     }
   } else if (source.clientProjectId) {

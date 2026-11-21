@@ -30,6 +30,7 @@ export function IssuerSettingsForm({ action, value }: { action: Action; value: I
           <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
             <TextField name="quoteValidityDays" label="Validité des devis (jours)" type="number" defaultValue={value.quoteValidityDays} errors={errors} />
             <TextAreaField name="quoteTerms" label="Conditions par défaut des devis" rows={4} defaultValue={value.quoteTerms} errors={errors} hint="Ex. acompte, délais, révisions incluses" />
+            <TextAreaField name="invoiceTerms" label="Conditions par défaut des factures" rows={4} defaultValue={value.invoiceTerms} errors={errors} hint="Ex. pénalités de retard, délai de paiement" />
           </div>
           <TextAreaField name="footer" label="Mention de bas de page" rows={2} defaultValue={value.footer} errors={errors} />
         </>
@@ -52,6 +53,30 @@ export function TemplatesSettingsForm({ action, value }: { action: Action; value
             defaultValue={value.whatsappQuote}
             errors={errors}
             hint="Variables disponibles : {client}, {numero}, {total}, {validite}, {lien}"
+          />
+          <TextAreaField
+            name="whatsappInvoice"
+            label="Message WhatsApp d'envoi de facture"
+            rows={4}
+            defaultValue={value.whatsappInvoice}
+            errors={errors}
+            hint="Variables : {client}, {numero}, {total}, {solde}, {echeance}, {devise}, {lien}"
+          />
+          <TextAreaField
+            name="whatsappReminder"
+            label="Message WhatsApp de relance"
+            rows={4}
+            defaultValue={value.whatsappReminder}
+            errors={errors}
+            hint="Variables : {client}, {numero}, {total}, {solde}, {echeance}, {devise}, {lien}"
+          />
+          <TextAreaField
+            name="whatsappReceipt"
+            label="Message WhatsApp d'envoi de reçu"
+            rows={3}
+            defaultValue={value.whatsappReceipt}
+            errors={errors}
+            hint="Variables : {client}, {montant}, {facture}, {numero}, {solde}, {lien}"
           />
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Modèles de réponse (laisser le titre vide pour supprimer)</legend>

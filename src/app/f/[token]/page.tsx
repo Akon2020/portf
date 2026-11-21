@@ -6,16 +6,23 @@ import { RATE_LIMITS, consumeRateLimit } from "@/server/auth/rate-limit";
 import { readSettingUncached } from "@/server/content/queries";
 import { acceptQuoteAction, declineQuoteAction } from "@/server/actions/documents";
 import { getRequestContext } from "@/server/request-context";
+import { InvoiceView, ReceiptView } from "@/components/public/document-views";
+import { getInvoiceByToken, getReceiptByToken, markInvoiceViewed } from "@/server/services/invoices";
 import { getQuoteByToken, isExpired, markQuoteViewed } from "@/server/services/quotes";
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
+  const robots = { index: false, follow: false };
   const found = await getQuoteByToken(token);
-  const english = found?.quote.locale === "en";
-  return {
-    title: `${english ? "Quote" : "Devis"} ${found?.quote.number ?? ""} | Isaac Akonkwa`.replace("  ", " "),
-    robots: { index: false, follow: false },
-  };
+  if (found) {
+    const english = found.quote.locale === "en";
+    return { title: `${english ? "Quote" : "Devis"} ${found.quote.number ?? ""} | Isaac Akonkwa`, robots };
+  }
+  const invoice = await getInvoiceByToken(token);
+  if (invoice) return { title: `${invoice.invoice.locale === "en" ? "Invoice" : "Facture"} ${invoice.invoice.number ?? ""} | Isaac Akonkwa`, robots };
+  const receipt = await getReceiptByToken(token);
+  if (receipt) return { title: `${receipt.invoice.locale === "en" ? "Receipt" : "Reçu"} ${receipt.receipt.number} | Isaac Akonkwa`, robots };
+  return { title: "Document | Isaac Akonkwa", robots };
 }
 
 const T = {
@@ -74,6 +81,15 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   const found = await getQuoteByToken(token);
 
   if (!found) {
+    const invoice = await getInvoiceByToken(token);
+    if (invoice) {
+      await markInvoiceViewed(invoice.invoice);
+      return <InvoiceView invoice={invoice.invoice} items={invoice.items} issuer={await readSettingUncached("issuer")} token={token} />;
+    }
+    const receipt = await getReceiptByToken(token);
+    if (receipt) {
+      return <ReceiptView receipt={receipt.receipt} payment={receipt.payment} invoice={receipt.invoice} issuer={await readSettingUncached("issuer")} token={token} />;
+    }
     // Repeated invalid tokens from one IP look like enumeration: slow them down.
     const { ip } = await getRequestContext();
     await consumeRateLimit(`document:invalid:${ip}`, RATE_LIMITS.login);
@@ -150,8 +166,21 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
         <h1 className="mt-2 text-(length:--text-h2) font-medium">{quote.title}</h1>
       </section>
 
-      <div className="mt-8 overflow-x-auto rounded-2xl border bg-card">
-        <table className="w-full min-w-[520px] text-sm">
+      <div className="mt-8 overflow-hidden rounded-2xl border bg-card">
+        <ul className="divide-y text-sm sm:hidden">
+          {items.map((item) => (
+            <li key={item.id} className="px-5 py-3">
+              <p>{item.description}</p>
+              <p className="mt-1 flex justify-between gap-3 text-muted-foreground">
+                <span className="tabular-nums">
+                  {Number(item.quantity).toLocaleString(locale === "fr" ? "fr-FR" : "en-US")} × {money(item.unitPrice)}
+                </span>
+                <span className="font-medium tabular-nums text-foreground">{money(item.total)}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+        <table className="hidden w-full text-sm sm:table">
           <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr className="border-b">
               <th className="px-5 py-3 font-medium">{t.description}</th>
