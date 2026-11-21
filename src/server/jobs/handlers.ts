@@ -24,6 +24,12 @@ export function registerJobHandlers(): void {
   if (registered) return;
   registered = true;
 
+  registerJobHandler("task.reminder", async (payload) => {
+    if (typeof payload.reminderId !== "string") return;
+    const { deliverReminder } = await import("../services/tasks");
+    await deliverReminder(payload.reminderId);
+  });
+
   // Retry of an e-mail that could not be sent at request time.
   registerJobHandler("mail.raw", async (payload) => {
     const mail = payload as {

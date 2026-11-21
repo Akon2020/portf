@@ -1,0 +1,11 @@
+{
+  "name": "Administration Isaac Akonkwa",
+  "short_name": "Admin",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#0A1220",
+  "theme_color": "#0A1220",
+  "lang": "fr",
+  "icons": [{ "src": "/icon", "sizes": "any", "type": "image/png" }]
+}

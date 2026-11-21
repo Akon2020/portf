@@ -252,3 +252,48 @@ export function MagicLinkEmail({ name, url, locale }: { name: string; url: strin
     </EmailLayout>
   );
 }
+
+export function TaskReminderEmail({ title, when, description, url }: { title: string; when: string; description: string; url: string }) {
+  return (
+    <EmailLayout preview={`Rappel : ${title}`} footer="Rappel automatique de l'administration">
+      <Heading as="h1" style={{ fontSize: 20, margin: "0 0 12px" }}>
+        {title}
+      </Heading>
+      {when ? <Text style={paragraph}>Prévu {when}.</Text> : null}
+      {description ? <Text style={{ ...paragraph, whiteSpace: "pre-line" }}>{description}</Text> : null}
+      <Section style={{ marginTop: 12 }}>
+        <Button href={url} style={button}>
+          Ouvrir la tâche
+        </Button>
+      </Section>
+    </EmailLayout>
+  );
+}
+
+export function DigestEmail({ date, sections, url }: { date: string; sections: { title: string; items: string[] }[]; url: string }) {
+  return (
+    <EmailLayout preview={`Votre journée du ${date}`} footer="Récapitulatif quotidien de l'administration">
+      <Heading as="h1" style={{ fontSize: 20, margin: "0 0 4px" }}>
+        Votre journée
+      </Heading>
+      <Text style={{ ...muted, marginTop: 0 }}>{date}</Text>
+      {sections.map((section) => (
+        <Section key={section.title} style={{ marginTop: 16 }}>
+          <Text style={{ ...paragraph, fontWeight: 600, marginBottom: 6 }}>
+            {section.title} ({section.items.length})
+          </Text>
+          {section.items.map((item) => (
+            <Text key={item} style={{ ...paragraph, fontSize: 14, margin: "2px 0" }}>
+              · {item}
+            </Text>
+          ))}
+        </Section>
+      ))}
+      <Section style={{ marginTop: 20 }}>
+        <Button href={url} style={button}>
+          Ouvrir les tâches
+        </Button>
+      </Section>
+    </EmailLayout>
+  );
+}

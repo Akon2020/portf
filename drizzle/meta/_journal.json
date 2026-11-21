@@ -43,6 +43,13 @@
       "when": 1795206152642,
       "tag": "0005_crm-billing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795227855471,
+      "tag": "0006_tasks-reminders",
+      "breakpoints": true
     }
   ]
 }

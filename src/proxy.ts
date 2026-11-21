@@ -51,7 +51,7 @@ export const config = {
   matcher: [
     {
       source:
-        "/((?!api|media|_next/static|_next/image|favicon.ico|icon|apple-icon|robots.txt|sitemap.xml|feed.xml|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|txt|xml|pdf)$).*)",
+        "/((?!api|media|_next/static|_next/image|favicon.ico|icon|apple-icon|robots.txt|sitemap.xml|feed.xml|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|txt|xml|pdf|js|webmanifest)$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

@@ -76,6 +76,9 @@ export default async function ClientProjectPage({ params, searchParams }: { para
         }
         actions={
           <>
+            <Link href={`/admin/taches/nouveau?projet=${project.id}`} className="inline-flex h-10 items-center gap-1.5 rounded-xl border bg-card px-3.5 text-sm hover:bg-surface">
+              Nouvelle tâche
+            </Link>
             <Link href={`/admin/facturation/nouveau?client=${client.id}&projet=${project.id}`} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-medium text-accent-foreground hover:bg-accent/90">
               <Receipt className="size-4" aria-hidden="true" /> Facturer
             </Link>

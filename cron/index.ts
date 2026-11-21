@@ -11,7 +11,10 @@ import { createAdmin } from "../src/server/cli/create-admin";
 import { healthcheck } from "../src/server/cli/healthcheck";
 import { registerJobHandlers } from "../src/server/jobs/handlers";
 import { runDueJobs } from "../src/server/jobs/runner";
+import { markOverdueInvoices } from "../src/server/services/invoices";
+import { generateVapidKeys } from "../src/server/services/push";
 import { expireQuotes } from "../src/server/services/quotes";
+import { sendDailyDigest } from "../src/server/services/tasks";
 
 loadEnvConfig(process.cwd());
 registerJobHandlers();
@@ -42,7 +45,21 @@ const tasks: Record<string, { task: Task; tracked: boolean }> = {
         .where(sql`${authTokens.expiresAt} < now() - interval '7 days'`)
         .returning({ id: authTokens.id });
       const expiredQuotes = await expireQuotes();
-      return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes };
+      const overdueInvoices = await markOverdueInvoices();
+      return { processed: rateLimits + oldSessions.length + oldTokens.length + expiredQuotes + overdueInvoices };
+    },
+  },
+  "daily-digest": {
+    tracked: true,
+    task: async () => ({ processed: await sendDailyDigest(), code: 0 }),
+  },
+  "vapid-keys": {
+    tracked: false,
+    task: async () => {
+      const keys = generateVapidKeys();
+      console.log(`VAPID_PUBLIC_KEY=${keys.publicKey}
+VAPID_PRIVATE_KEY=${keys.privateKey}`);
+      return { code: 0 };
     },
   },
 };
