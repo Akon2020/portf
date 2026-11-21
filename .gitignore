@@ -22,3 +22,6 @@ portfolio_data/
 Thumbs.db
 release/
 release-server.log
+
+# End to end test data
+.tmp-e2e/
