@@ -114,6 +114,13 @@ export async function loginWithPassword(
       .set(lockout ? { failedLoginCount: 0, lockedUntil: lockout.lockedUntil, lockoutLevel: lockout.lockoutLevel } : { failedLoginCount: failed })
       .where(eq(users.id, user.id));
     await recordAttempt(email, meta, false, lockout ? "locked_now" : "wrong_password");
+    const { recordAppSignal } = await import("@/monitoring/record");
+    await recordAppSignal(
+      { ip: meta.ip, method: "POST", path: "/auth/login", query: "", userAgent: meta.userAgent },
+      lockout
+        ? { ruleId: "auth.lockout", category: "brute_force", severity: "high", score: 30, excerpt: email }
+        : { ruleId: "auth.failed-login", category: "brute_force", severity: "low", score: 5, excerpt: email },
+    );
     if (lockout) {
       await enqueueJob("mail.security_alert", {
         kind: "account_locked",

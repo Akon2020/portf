@@ -29,7 +29,11 @@ export async function requestMagicLink(rawEmail: string, meta: RequestMeta): Pro
     consumeRateLimit(`magic:ip:${meta.ip}`, { limit: 10, windowSeconds: 3600 }),
     consumeRateLimit(`magic:email:${email}`, RATE_LIMITS.magicLink),
   ]);
-  if (!byIp.allowed || !byEmail.allowed) return;
+  if (!byIp.allowed || !byEmail.allowed) {
+    const { recordAppSignal } = await import("@/monitoring/record");
+    await recordAppSignal({ ip: meta.ip, method: "POST", path: "/espace-client/connexion", query: "", userAgent: meta.userAgent }, { ruleId: "portal.magic-link-flood", category: "rate_abuse", severity: "medium", score: 15, excerpt: email });
+    return;
+  }
 
   const [row] = await getDb()
     .select({ user: users, client: clients })

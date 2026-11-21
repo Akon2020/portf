@@ -5,3 +5,4 @@ export * from "./crm";
 export * from "./blog";
 export * from "./billing";
 export * from "./tasks";
+export * from "./monitoring";

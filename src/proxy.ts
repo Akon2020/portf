@@ -2,13 +2,20 @@ import createIntlMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 import { buildCsp, isPrivatePath } from "@/lib/security-headers";
+import { guardRequest } from "@/monitoring/guard";
 import { SESSION_COOKIES } from "@/server/auth/cookie-names";
 
 const dev = process.env.NODE_ENV === "development";
 const intl = createIntlMiddleware(routing);
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Bans, attack detection and audience, before anything else.
+  const blocked = await guardRequest(request);
+  if (blocked) return blocked;
+  if (pathname.startsWith("/api") || pathname.startsWith("/media")) return NextResponse.next();
+
   const isPrivate = isPrivatePath(pathname);
 
   // Lightweight check only: every protected page validates the session in the database.
@@ -51,7 +58,7 @@ export const config = {
   matcher: [
     {
       source:
-        "/((?!api|media|_next/static|_next/image|favicon.ico|icon|apple-icon|robots.txt|sitemap.xml|feed.xml|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|txt|xml|pdf|js|webmanifest)$).*)",
+        "/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|robots.txt|sitemap.xml|feed.xml|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|txt|xml|pdf|js|webmanifest)$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

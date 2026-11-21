@@ -15,6 +15,10 @@ export async function dashboardData(userId: string) {
       draft_posts: number;
       to_review: number;
       backup_codes: number;
+      security_events: number;
+      active_bans: number;
+      tasks_today: number;
+      tasks_overdue: number;
     }>(sql`
       select
         (select count(*)::int from conversations where status = 'new') as new_messages,
@@ -29,7 +33,11 @@ export async function dashboardData(userId: string) {
           (select count(*)::int from testimonials where needs_review) +
           (select count(*)::int from posts where needs_review and deleted_at is null)
         ) as to_review,
-        (select count(*)::int from backup_codes where user_id = ${userId} and used_at is null) as backup_codes
+        (select count(*)::int from backup_codes where user_id = ${userId} and used_at is null) as backup_codes,
+        (select count(*)::int from security_events where created_at >= now() - interval '24 hours') as security_events,
+        (select count(*)::int from ip_bans where lifted_at is null and (expires_at is null or expires_at > now())) as active_bans,
+        (select count(*)::int from tasks where deleted_at is null and status <> 'done' and due_at >= now() and (due_at at time zone 'Africa/Lubumbashi')::date = (now() at time zone 'Africa/Lubumbashi')::date) as tasks_today,
+        (select count(*)::int from tasks where deleted_at is null and status <> 'done' and due_at < now()) as tasks_overdue
     `),
     db.execute<{ currency: "USD" | "CDF"; pending: number; accepted: number; count: number }>(sql`
       select currency,

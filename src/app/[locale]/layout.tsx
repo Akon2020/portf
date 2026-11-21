@@ -3,6 +3,8 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/public/site-footer";
+import { Tracker } from "@/components/public/tracker";
+import { TRAP_PATH } from "@/monitoring/rules";
 import { SiteHeader } from "@/components/public/site-header";
 import { THEME_SCRIPT } from "@/lib/theme-script";
 import { routing } from "@/i18n/routing";
@@ -62,6 +64,11 @@ export default async function LocaleLayout({
             {children}
           </main>
           <SiteFooter locale={locale} />
+          <Tracker />
+          {/* Trap for crawlers that ignore robots.txt: invisible, never followed by people. */}
+          <a href={TRAP_PATH} rel="nofollow" tabIndex={-1} aria-hidden="true" hidden>
+            archive
+          </a>
         </NextIntlClientProvider>
       </body>
     </html>

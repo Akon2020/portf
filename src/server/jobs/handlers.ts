@@ -24,6 +24,19 @@ export function registerJobHandlers(): void {
   if (registered) return;
   registered = true;
 
+  registerJobHandler("security.alert", async (payload) => {
+    const { sendSecurityDigest } = await import("@/monitoring/alerts");
+    await sendSecurityDigest(typeof payload.since === "string" ? new Date(payload.since) : new Date(Date.now() - 15 * 60_000));
+  });
+
+  registerJobHandler("monitoring.batela", async (payload) => {
+    const endpoint = process.env.BATELA_ENDPOINT;
+    const key = process.env.BATELA_API_KEY;
+    if (!endpoint || !key || !Array.isArray(payload.events)) return;
+    const { postBatch } = await import("@/monitoring/transport");
+    await postBatch(endpoint, key, payload.events as never);
+  });
+
   registerJobHandler("task.reminder", async (payload) => {
     if (typeof payload.reminderId !== "string") return;
     const { deliverReminder } = await import("../services/tasks");

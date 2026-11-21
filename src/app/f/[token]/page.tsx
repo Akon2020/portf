@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/money";
 import { RATE_LIMITS, consumeRateLimit } from "@/server/auth/rate-limit";
 import { readSettingUncached } from "@/server/content/queries";
 import { acceptQuoteAction, declineQuoteAction } from "@/server/actions/documents";
+import { recordAppSignal } from "@/monitoring/record";
 import { getRequestContext } from "@/server/request-context";
 import { InvoiceView, ReceiptView } from "@/components/public/document-views";
 import { getInvoiceByToken, getReceiptByToken, markInvoiceViewed } from "@/server/services/invoices";
@@ -93,6 +94,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     // Repeated invalid tokens from one IP look like enumeration: slow them down.
     const { ip } = await getRequestContext();
     await consumeRateLimit(`document:invalid:${ip}`, RATE_LIMITS.login);
+    await recordAppSignal({ ip, method: "GET", path: "/f/[jeton]", query: "", userAgent: (await getRequestContext()).userAgent }, { ruleId: "document.invalid-token", category: "invalid_token", severity: "medium", score: 10 });
     return (
       <main className="mx-auto flex min-h-dvh max-w-lg items-center px-4">
         <p className="rounded-2xl border bg-card p-8 text-muted-foreground">{T.fr.notFound}</p>

@@ -238,6 +238,18 @@ export default async function DashboardPage() {
                 <dd>{data.totals.backup_codes} sur 10</dd>
               </>
             )}
+            <dt className="text-muted-foreground">Événements (24 h)</dt>
+            <dd>
+              <Link href="/admin/monitoring/securite" className="hover:text-accent">
+                {data.totals.security_events}
+              </Link>
+            </dd>
+            <dt className="text-muted-foreground">IP bannies actives</dt>
+            <dd>
+              <Link href="/admin/monitoring/bannissements" className="hover:text-accent">
+                {data.totals.active_bans}
+              </Link>
+            </dd>
             <dt className="text-muted-foreground">Dernière connexion</dt>
             <dd>{data.account?.lastLoginAt ? `${dateTime.format(data.account.lastLoginAt)}` : "Aucune"}</dd>
           </dl>
@@ -256,6 +268,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
+        <Link href="/admin/taches" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md sm:col-span-3">
+          <ListChecks className="size-5 text-accent" aria-hidden="true" /> Tâches du jour : {data.totals.tasks_today}
+          <span className={`ml-auto text-xs ${data.totals.tasks_overdue ? "font-medium text-destructive" : "text-muted-foreground"}`}>{data.totals.tasks_overdue} en retard</span>
+        </Link>
         <Link href="/admin/blog/nouveau" className="admin-card flex items-center gap-3 p-4 text-sm font-medium hover:shadow-md">
           <Newspaper className="size-5 text-accent" aria-hidden="true" /> Écrire un article
           <span className="ml-auto text-xs text-muted-foreground">{data.totals.draft_posts} brouillons</span>

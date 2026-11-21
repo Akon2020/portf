@@ -153,7 +153,15 @@ function cleanDeep(value: unknown): unknown {
   return value;
 }
 
-const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = { profile: ["available"], contact: [], legal: [], cv: [], templates: [], issuer: [] };
+const SETTINGS_BOOLEANS: Record<SettingsKey, string[]> = {
+  profile: ["available"],
+  contact: [],
+  legal: [],
+  cv: [],
+  templates: [],
+  issuer: [],
+  security: ["alertOnCritical", "alertOnAutoBan", "trackAudience"],
+};
 
 export async function saveSettingsAction(key: SettingsKey, _state: FormState, formData: FormData): Promise<FormState> {
   const actor = await currentActor();

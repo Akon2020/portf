@@ -95,6 +95,16 @@ export type CvSettings = z.infer<typeof cvSettingsSchema>;
 export type TemplatesSettings = z.infer<typeof templatesSettingsSchema>;
 export type IssuerSettings = z.infer<typeof issuerSettingsSchema>;
 
+/** Thresholds of the security module. */
+export const securitySettingsSchema = z.object({
+  autoBanThreshold: z.coerce.number().int().min(20).max(1000).default(60),
+  alertOnCritical: z.boolean().default(true),
+  alertOnAutoBan: z.boolean().default(true),
+  trackAudience: z.boolean().default(true),
+});
+
+export type SecuritySettings = z.infer<typeof securitySettingsSchema>;
+
 export const SETTINGS_SCHEMAS = {
   profile: profileSettingsSchema,
   contact: contactSettingsSchema,
@@ -102,6 +112,7 @@ export const SETTINGS_SCHEMAS = {
   cv: cvSettingsSchema,
   templates: templatesSettingsSchema,
   issuer: issuerSettingsSchema,
+  security: securitySettingsSchema,
 } as const;
 
 export type SettingsKey = keyof typeof SETTINGS_SCHEMAS;
@@ -201,4 +212,5 @@ export const DEFAULT_SETTINGS: { [K in SettingsKey]: SettingsValue<K> } = {
       "Bonjour {client}, petit rappel concernant la facture {numero} : il reste {solde} à régler (échéance le {echeance}). Vous pouvez la consulter ici : {lien}. Merci, Isaac Akonkwa.",
     whatsappReceipt: "Bonjour {client}, merci pour votre paiement de {montant} (facture {facture}). Voici votre reçu {numero} : {lien}. Isaac Akonkwa.",
   },
+  security: { autoBanThreshold: 60, alertOnCritical: true, alertOnAutoBan: true, trackAudience: true },
 };

@@ -110,6 +110,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/devis"
+              data-track="cta_click"
+              data-track-label="devis_hero"
               className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5"
             >
               {t("hero.ctaPrimary")}

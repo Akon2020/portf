@@ -50,6 +50,13 @@
       "when": 1795227855471,
       "tag": "0006_tasks-reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795228535350,
+      "tag": "0007_monitoring",
+      "breakpoints": true
     }
   ]
 }

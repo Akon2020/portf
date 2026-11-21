@@ -1,9 +1,9 @@
 "use client";
 
 import type { FormState } from "@/server/actions/content";
-import type { IssuerSettings, TemplatesSettings } from "@/server/content/settings-schema";
+import type { IssuerSettings, SecuritySettings, TemplatesSettings } from "@/server/content/settings-schema";
 import { EntityForm } from "../entity-form";
-import { TextAreaField, TextField } from "../fields";
+import { CheckboxField, TextAreaField, TextField } from "../fields";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -87,6 +87,30 @@ export function TemplatesSettingsForm({ action, value }: { action: Action; value
               </div>
             ))}
           </fieldset>
+        </>
+      )}
+    </EntityForm>
+  );
+}
+
+export function SecuritySettingsForm({ action, value }: { action: Action; value: SecuritySettings }) {
+  return (
+    <EntityForm action={action}>
+      {(errors) => (
+        <>
+          <TextField
+            name="autoBanThreshold"
+            label="Seuil de bannissement automatique (score)"
+            type="number"
+            defaultValue={value.autoBanThreshold}
+            errors={errors}
+            hint="Ex. un scan .env vaut 50, une injection SQL 40, un échec de connexion 5. Le score est divisé par deux toutes les 24 h."
+          />
+          <div className="space-y-3">
+            <CheckboxField name="alertOnAutoBan" label="M'alerter à chaque bannissement automatique" defaultChecked={value.alertOnAutoBan} />
+            <CheckboxField name="alertOnCritical" label="M'alerter pour tout événement critique" defaultChecked={value.alertOnCritical} />
+            <CheckboxField name="trackAudience" label="Mesurer l'audience du site public" hint="Sans cookie et sans conserver d'adresse IP" defaultChecked={value.trackAudience} />
+          </div>
         </>
       )}
     </EntityForm>
